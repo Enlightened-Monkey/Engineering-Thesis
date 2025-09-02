@@ -1,0 +1,45 @@
+\chapter{Algorytmy}
+
+\section{Algorytm oceny polityki}
+
+Przedstawiamy algorytm wolny od modelu do oceny polityk w ramach dyskontowania quasi-hiperbolicznego.
+
+\begin{algorithm}
+\caption{QH Policy Evaluation}
+\begin{algorithmic}
+\STATE \textbf{Input:} Policy $\pi$, parameters $\sigma$, $\gamma$
+\STATE Initialize $V^0(s) = 0$ for all $s \in S$
+\FOR{$k = 0, 1, 2, \ldots$}
+    \FOR{each state $s \in S$}
+        \STATE Update value function using QH discounting
+    \ENDFOR
+\ENDFOR
+\STATE \textbf{Output:} Value function $V^\pi$
+\end{algorithmic}
+\end{algorithm}
+
+\section{Algorytm QH Q-Learning}
+
+Algorytm uczenia Q dla dyskontowania quasi-hiperbolicznego, który znajduje optymalną politykę bez znajomości modelu środowiska.
+
+\begin{algorithm}
+\caption{QH Q-Learning}
+\begin{algorithmic}
+\STATE \textbf{Input:} Parameters $\sigma$, $\gamma$, learning rate $\alpha$
+\STATE Initialize $Q(s,a) = 0$ for all $(s,a) \in S \times A$
+\REPEAT
+    \STATE Choose action using $\epsilon$-greedy policy
+    \STATE Observe reward $r$ and next state $s'$
+    \STATE Update Q-function using QH discounting rule
+\UNTIL{convergence}
+\STATE \textbf{Output:} Optimal Q-function and policy
+\end{algorithmic}
+\end{algorithm}
+
+\section{Analiza zbieżności}
+
+Przedstawiamy dowody zbieżności dla proponowanych algorytmów, wykorzystując teorię aproksymacji stochastycznej o dwóch skalach czasowych.
+
+\section{Złożoność obliczeniowa}
+
+Analizujemy złożoność czasową i pamięciową algorytmów w porównaniu z tradycyjnymi metodami.
