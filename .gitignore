@@ -1,0 +1,98 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# LaTeX
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.nav
+*.snm
+*.vrb
+
+# Data and Results
+data/datasets/*.csv
+data/results/*.pkl
+data/plots/*.png
+data/plots/*.pdf
+!data/datasets/README.md
+!data/results/README.md
+!data/plots/README.md
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Large files (PDFs, datasets)
+*.pdf
+!docs/thesis/figures/*.pdf
+
+# Compiled LaTeX output
+docs/thesis/*.pdf
+docs/thesis/main.aux
+docs/thesis/main.bbl
+docs/thesis/main.blg
+docs/thesis/main.log
+docs/thesis/main.out
+docs/thesis/main.synctex.gz
+docs/thesis/main.toc
