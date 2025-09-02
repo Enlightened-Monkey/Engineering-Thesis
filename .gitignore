@@ -83,10 +83,6 @@ tmp/
 temp/
 *.tmp
 
-# Large files (PDFs, datasets)
-*.pdf
-!docs/thesis/figures/*.pdf
-
 # Compiled LaTeX output
 docs/thesis/*.pdf
 docs/thesis/main.aux
