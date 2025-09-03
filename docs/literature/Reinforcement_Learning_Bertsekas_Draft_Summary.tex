@@ -1,0 +1,39 @@
+% LaTeX summary snippet (to be \input into a larger document)
+
+\section*{Summary: Reinforcement Learning (Bertsekas Draft)}
+
+\paragraph{Problem Classes}
+Discounted MDPs (contraction with factor $\gamma$), stochastic shortest path (SSP), and average-cost models (bias/relative value).
+
+\paragraph{DP Foundations}
+Bellman operator $T(V)(s)=\max_a\{ r(s,a)+\gamma\,\mathbb{E}[V(s')]\}$; value iteration (VI), policy iteration (PI), and their properties (monotonicity, contraction).
+
+\paragraph{Rollout and Lookahead}
+Rollout improves a base policy via 1-step/multi-step lookahead; Monte Carlo rollout provides sampling-based approximations.
+
+\paragraph{Approximate DP}
+Function approximation induces projected equations $\Pi T(V)\approx V$. Use MSPBE for analysis; aggregation/abstraction give performance guarantees.
+
+\paragraph{TD Methods}
+TD(0)/TD($\lambda$), LSTD/LSTDQ, LSPI; on/off-policy properties and stability in linear settings.
+
+\paragraph{Control}
+Tabular Q-learning (and double Q-learning), SARSA; exploration and stepsize schedules.
+
+\paragraph{Policy Gradient and Actor--Critic}
+Policy gradient theorem, compatible function approximation, natural gradients, actor--critic with baselines and advantage estimation.
+
+\paragraph{Off-Policy and Importance Sampling}
+Importance sampling ratios (per-decision), high-variance issues; GTD/TDC methods optimize MSPBE for stable off-policy evaluation.
+
+\paragraph{Asynchronous/Distributed}
+Asynchronous VI/PI (Gauss--Seidel), RTDP, prioritized sweeping.
+
+\paragraph{Convergence and Error Bounds}
+Strong guarantees in tabular/contraction cases; with approximation, bounds relate projection error to policy suboptimality.
+
+\paragraph{Practical Guidance}
+Prefer PI/modified PI when evaluation is tractable; use VI with acceleration otherwise; rollout is a robust anytime improver; for linear FA, use LSTD/LSPI/GTD; for deep RL, use target networks, replay, and regularization.
+
+\paragraph{Relevance Here}
+QH algorithms in this repo reuse $\delta$-discounted continuation learning; all tabular guarantees transfer to that component. Compare $\beta{=}1$ vs $\beta{<}1$ to isolate present-bias.
