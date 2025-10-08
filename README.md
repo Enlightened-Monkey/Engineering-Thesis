@@ -36,10 +36,13 @@ This repository contains the complete implementation and documentation for an en
 │   ├── models/                    # MDP environment models
 │   │   └── mdp_environments.py    # Inventory and GridWorld MDPs
 │   ├── experiments/               # Experimental framework
-│   │   └── experiment_runner.py   # Main experiment runner
+│   │   ├── experiment_runner.py   # Main experiment runner
+│   │   └── comparison_standard_vs_qh.py # Standard vs QH comparison
 │   ├── utils/                     # Utility functions
 │   │   └── analysis_tools.py      # Analysis and visualization tools
 │   └── tests/                     # Unit tests
+├── notebooks/                     # Jupyter notebooks
+│   └── standard_vs_qh_comparison.ipynb # Interactive comparison analysis
 ├── data/                          # Data directory
 │   ├── datasets/                  # Input datasets
 │   ├── results/                   # Experimental results
@@ -97,19 +100,52 @@ python -m pip install numpy scipy matplotlib pandas seaborn
 
 ### Running Experiments
 
+#### Quick Start: Standard vs QH Comparison
+
+```bash
+# Run the comparison script
+cd src/experiments
+python comparison_standard_vs_qh.py
+```
+
+Or use the interactive Jupyter notebook:
+```bash
+jupyter notebook notebooks/standard_vs_qh_comparison.ipynb
+```
+
+#### Programmatic Usage
+
 ```python
-from src.experiments.experiment_runner import ExperimentRunner
+from src.experiments.comparison_standard_vs_qh import MDPComparison
 from src.models.mdp_environments import InventoryMDP
 
-# Create experiment runner
-runner = ExperimentRunner()
+# Create environment
+env = InventoryMDP(max_inventory=15, max_order=8)
 
-# Run inventory management experiment
-sigma_values = [0.5, 0.7, 0.9, 1.0]
-results = runner.run_inventory_experiment(sigma_values, n_runs=5)
+# Initialize comparison
+comparison = MDPComparison(
+    env=env,
+    sigma=0.7,   # Present-bias parameter
+    gamma=0.95,  # Discount factor
+    alpha=0.1,   # Learning rate
+    epsilon=0.1  # Exploration rate
+)
 
-# Generate plots
-runner.generate_plots(results, 'performance_vs_sigma')
+# Train both standard and QH algorithms
+comparison.train(n_episodes=5000, record_interval=100)
+
+# Generate report
+print(comparison.generate_report())
+
+# Analyze policies and values
+policy_comp = comparison.compare_policies()
+value_comp = comparison.compare_values()
+
+# Check time-consistency
+consistency = comparison.analyze_time_consistency(initial_state=5, horizon=10)
+
+# Visualize results
+comparison.plot_comparison(save_path='results.png')
 ```
 
 ### Building the Thesis
@@ -152,6 +188,27 @@ The thesis demonstrates practical applications in:
 - QH algorithms successfully learn optimal policies in various environments
 - Present-bias parameter significantly affects optimal behavior
 - Traditional exponential discounting is a special case (σ = 1)
+
+### Comparison: Standard vs Quasi-Hyperbolic Discounting
+
+The framework provides comprehensive comparison between:
+
+**Standard Q-Learning** (Exponential Discounting):
+- Value function: $V(s) = E[\sum_{t=0}^{\infty} \gamma^t r_t]$
+- Time-consistent preferences
+- Optimal from long-term perspective
+
+**QH Q-Learning** (Quasi-Hyperbolic Discounting):
+- Value function: $V(s) = E[r_0 + \sigma \sum_{t=1}^{\infty} \gamma^t r_t]$
+- Present-bias when σ < 1
+- Potentially time-inconsistent
+- Better models human behavior
+
+**Key Observations:**
+- Policy agreement decreases as σ decreases (stronger present-bias)
+- QH discounting leads to more myopic (short-term focused) decisions
+- Value function differences are significant in states requiring long-term planning
+- Time-inconsistency manifests when precommitted and myopic choices differ
 
 ## Available Documents
 
