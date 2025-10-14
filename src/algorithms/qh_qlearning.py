@@ -9,9 +9,13 @@ Based on:
 - Eshwar, S. et al. (2024). Reinforcement learning with quasi-hyperbolic discounting
 """
 
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Any, Dict, Optional
+
 import numpy as np
-from typing import Dict, Tuple, Optional
-from abc import ABC, abstractmethod
 
 class QHQLearning:
     """
@@ -104,6 +108,93 @@ class QHQLearning:
             Value function array
         """
         return np.max(self.q_qh, axis=1)
+
+    # ------------------------------------------------------------------
+    # Persistence helpers
+    # ------------------------------------------------------------------
+    def state_dict(self) -> Dict[str, Any]:
+        """Return a serialisable snapshot of the agent state."""
+
+        return {
+            "n_states": int(self.n_states),
+            "n_actions": int(self.n_actions),
+            "sigma": float(self.sigma),
+            "gamma": float(self.gamma),
+            "alpha": float(self.alpha),
+            "epsilon": float(self.epsilon),
+            "q_exp": self.q_exp,
+            "q_qh": self.q_qh,
+        }
+
+    def load_state_dict(self, state: Dict[str, Any]) -> None:
+        """Load the agent parameters from a snapshot."""
+
+        self.sigma = float(state["sigma"])
+        self.gamma = float(state["gamma"])
+        self.alpha = float(state["alpha"])
+        self.epsilon = float(state["epsilon"])
+
+        self.q_exp = np.array(state["q_exp"], copy=True)
+        self.q_qh = np.array(state["q_qh"], copy=True)
+
+    def save(self, path: Path | str, metadata: Optional[Dict[str, Any]] = None) -> Path:
+        """Persist agent parameters to a compressed ``.npz`` file."""
+
+        target = Path(path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+
+        payload: Dict[str, Any] = self.state_dict()
+        if metadata is not None:
+            payload["metadata_json"] = np.array(json.dumps(metadata))
+
+        np.savez_compressed(target, **payload)
+        return target
+
+    @classmethod
+    def load(
+        cls,
+        path: Path | str,
+        *,
+        return_metadata: bool = False,
+    ) -> "QHQLearning" | tuple["QHQLearning", Optional[Dict[str, Any]]]:
+        """Restore an agent from disk.
+
+        Args:
+            path: Location of the saved ``.npz`` file.
+            return_metadata: When ``True`` the metadata dict is returned
+                alongside the agent.
+
+        Returns:
+            ``QHQLearning`` instance, optionally accompanied by metadata.
+        """
+
+        source = Path(path)
+        with np.load(source, allow_pickle=True) as data:
+            n_states = int(data["n_states"])
+            n_actions = int(data["n_actions"])
+            sigma = float(data["sigma"])
+            gamma = float(data["gamma"])
+            alpha = float(data["alpha"])
+            epsilon = float(data["epsilon"])
+
+            agent = cls(n_states=n_states,
+                        n_actions=n_actions,
+                        sigma=sigma,
+                        gamma=gamma,
+                        alpha=alpha,
+                        epsilon=epsilon)
+
+            agent.q_exp = np.array(data["q_exp"], copy=True)
+            agent.q_qh = np.array(data["q_qh"], copy=True)
+
+            metadata = None
+            if "metadata_json" in data:
+                metadata_json = data["metadata_json"]
+                metadata = json.loads(metadata_json.item() if hasattr(metadata_json, "item") else str(metadata_json))
+
+        if return_metadata:
+            return agent, metadata
+        return agent
 
 
 def train_qh_qlearning(env, agent: QHQLearning, n_episodes: int = 1000) -> Dict:

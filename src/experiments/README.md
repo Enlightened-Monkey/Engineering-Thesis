@@ -62,8 +62,10 @@ Train a quasi-hyperbolic Q-learning agent on the physics-based pole balancing en
 
 **Usage (recommended):**
 ```bash
-python -m src.experiments.pole_balancing_training --episodes 800 --eval-episodes 30
+python -m src.experiments.pole_balancing_training --episodes 100000 --eval-episodes 25 --seed 123
 ```
+
+The script now saves a compressed agent snapshot (`.npz`) alongside a JSON summary (both timestamped). Key parameters:
 
 **Key flags:**
 
@@ -72,7 +74,32 @@ python -m src.experiments.pole_balancing_training --episodes 800 --eval-episodes
 - `--alpha` – learning rate
 - `--epsilon` / `--min-epsilon` / `--epsilon-decay` – exploration schedule
 - `--seed` – seed for reproducibility
-- `--no-save` – skip saving JSON logs into `data/results/`
+- `--results-dir` – directory for JSON summaries (default `data/results`)
+- `--model-dir` – directory for agent weight snapshots (default `data/models`)
+- `--no-save` – skip JSON summary storage
+- `--no-save-model` – skip saving the trained agent snapshot
+
+JSON logs contain per-episode rewards (sizeable for 100k runs); adjust `--episodes` if disk space is a concern.
+
+### 5. Pole Balancing Simulation (GIF)
+
+**File:** `pole_balancing_simulation.py`
+
+Load a trained agent snapshot and produce a Matplotlib GIF (defaults to a ~10s clip at environment fidelity):
+
+```bash
+python -m src.experiments.pole_balancing_simulation \
+    --model data/models/pole_balancing_100k/pole_balancing_qh_<timestamp>.npz \
+    --output data/plots/pole_balancing_100k.gif \
+    --duration 10
+```
+
+Additional options:
+
+- `--fps` – override frame rate (defaults to environment step frequency)
+- `--seed` – reproducible reset for the rollout
+- `--env-json` – optional path to a training summary JSON if metadata is unavailable
+- `--title` – customise the animation title
 
 ## Jupyter Notebooks
 
