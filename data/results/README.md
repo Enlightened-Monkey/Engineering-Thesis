@@ -8,6 +8,8 @@ This directory contains experimental results and analysis outputs.
 - `convergence_analysis/` - Convergence behavior studies  
 - `policy_analysis/` - Policy structure and time-inconsistency analysis
 - `parameter_studies/` - Effects of σ and γ parameters
+- `pole_balancing_100k/` - Quasi-hyperbolic cart-pole training summary (100k episodes)
+- `pole_balancing_300k/` - Extended run with slower learning rate (300k episodes)
 
 ## File Formats
 
@@ -30,3 +32,4 @@ results = load_results('performance_metrics/inventory_experiment.pkl')
 - Results files are excluded from git due to size (see .gitignore)
 - Each experiment generates timestamped result files
 - Summary statistics are available in CSV format for LaTeX tables
+- Latest pole-balancing JSON summaries can be parsed alongside the saved `.npz` agents in `data/models/*` for visualisation scripts

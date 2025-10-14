@@ -18,8 +18,10 @@ except ImportError:  # pragma: no cover - support execution via `python path/to/
     import sys
 
     REPO_ROOT = Path(__file__).resolve().parents[2]
-    if str(REPO_ROOT) not in sys.path:
-        sys.path.append(str(REPO_ROOT))
+    SRC_ROOT = REPO_ROOT / "src"
+    for candidate in (REPO_ROOT, SRC_ROOT):
+        if str(candidate) not in sys.path:
+            sys.path.append(str(candidate))
     from algorithms.qh_qlearning import QHQLearning  # type: ignore
     from models.mdp_environments import PoleBalancingMDP  # type: ignore
 
@@ -50,7 +52,7 @@ class EnvironmentConfig:
 
 @dataclass
 class TrainingConfig:
-    episodes: int = 500
+    episodes: int = 100_000
     eval_episodes: int = 25
     sigma: float = 0.7
     gamma: float = 0.97
@@ -60,7 +62,9 @@ class TrainingConfig:
     epsilon_decay: float = 0.995
     seed: Optional[int] = None
     results_dir: Path = Path("data/results")
+    model_dir: Path = Path("data/models")
     save_details: bool = True
+    save_model: bool = True
     environment: EnvironmentConfig = field(default_factory=EnvironmentConfig)
 
 
@@ -81,7 +85,9 @@ def parse_args() -> TrainingConfig:
     parser.add_argument("--epsilon-decay", type=float, default=TrainingConfig.epsilon_decay, help="Multiplicative decay for ε every 50 episodes")
     parser.add_argument("--seed", type=int, default=TrainingConfig.seed, help="Random seed for reproducibility")
     parser.add_argument("--results-dir", type=Path, default=TrainingConfig.results_dir, help="Directory for saving training artefacts")
+    parser.add_argument("--model-dir", type=Path, default=TrainingConfig.model_dir, help="Directory for saving trained agent snapshots")
     parser.add_argument("--no-save", action="store_true", help="Skip saving JSON summary to disk")
+    parser.add_argument("--no-save-model", action="store_true", help="Skip saving trained agent weights")
 
     parser.add_argument("--force-mag", type=float, default=env_defaults.force_mag, help="Magnitude of cart push force")
     parser.add_argument("--max-speed", type=float, default=env_defaults.max_speed, help="Maximum absolute cart speed")
@@ -118,7 +124,9 @@ def parse_args() -> TrainingConfig:
         epsilon_decay=args.epsilon_decay,
         seed=args.seed,
         results_dir=args.results_dir,
+        model_dir=args.model_dir,
         save_details=not args.no_save,
+        save_model=not args.no_save_model,
         environment=env_config,
     )
 
@@ -235,8 +243,31 @@ def train(config: TrainingConfig) -> Dict:
     evaluation_env = build_env(config.environment)  # fresh randomness for evaluation
     evaluation = evaluate_policy(agent, evaluation_env, config.eval_episodes)
 
+    timestamp = time.strftime("%Y%m%d-%H%M%S")
+
     config_dict = asdict(config)
     config_dict["results_dir"] = str(config.results_dir)
+    config_dict["model_dir"] = str(config.model_dir)
+    config_dict["environment"] = asdict(config.environment)
+
+    model_path_str: Optional[str] = None
+    if config.save_model:
+        metadata = {
+            "timestamp": timestamp,
+            "config": config_dict,
+            "summary": {
+                "final_epsilon": agent.epsilon,
+                "avg_reward": evaluation["avg_reward"],
+                "avg_duration_s": evaluation["avg_duration_s"],
+                "fall_rate": evaluation["fall_rate"],
+            },
+        }
+
+        config.model_dir.mkdir(parents=True, exist_ok=True)
+        model_path = config.model_dir / f"pole_balancing_qh_{timestamp}.npz"
+        agent.save(model_path, metadata=metadata)
+        model_path_str = str(model_path)
+        print(f"Saved trained agent to {model_path}")
 
     results = {
         "config": config_dict,
@@ -249,11 +280,13 @@ def train(config: TrainingConfig) -> Dict:
             "final_values": agent.get_value_function().tolist(),
         },
         "evaluation": evaluation,
+        "artifacts": {
+            "model_path": model_path_str,
+        },
     }
 
     if config.save_details:
         config.results_dir.mkdir(parents=True, exist_ok=True)
-        timestamp = time.strftime("%Y%m%d-%H%M%S")
         save_path = config.results_dir / f"pole_balancing_qh_{timestamp}.json"
         with save_path.open("w", encoding="utf-8") as fp:
             json.dump(results, fp, indent=2)
