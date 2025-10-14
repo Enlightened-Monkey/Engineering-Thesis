@@ -54,6 +54,26 @@ python demo_comparison.py --demo viz
 python demo_comparison.py --demo all
 ```
 
+### 4. Pole Balancing Training
+
+**File:** `pole_balancing_training.py`
+
+Train a quasi-hyperbolic Q-learning agent on the physics-based pole balancing environment described in the thesis.
+
+**Usage (recommended):**
+```bash
+python -m src.experiments.pole_balancing_training --episodes 800 --eval-episodes 30
+```
+
+**Key flags:**
+
+- `--sigma` – present-bias parameter σ (default 0.7)
+- `--gamma` – exponential discount γ (default 0.97)
+- `--alpha` – learning rate
+- `--epsilon` / `--min-epsilon` / `--epsilon-decay` – exploration schedule
+- `--seed` – seed for reproducibility
+- `--no-save` – skip saving JSON logs into `data/results/`
+
 ## Jupyter Notebooks
 
 For interactive exploration, see:
@@ -63,15 +83,18 @@ For interactive exploration, see:
 
 For detailed documentation, see:
 - `../docs/COMPARISON_GUIDE.md`
+- Pole balancing environment details are available via inline docstrings in `models.mdp_environments.PoleBalancingMDP`.
 
 ## Example Usage
 
 ```python
 from comparison_standard_vs_qh import MDPComparison
-from models.mdp_environments import InventoryMDP
+from models.mdp_environments import InventoryMDP, PoleBalancingMDP
 
 # Create environment
 env = InventoryMDP(max_inventory=15, max_order=8)
+# For pole balancing instead, use:
+# env = PoleBalancingMDP()
 
 # Setup comparison
 comparison = MDPComparison(

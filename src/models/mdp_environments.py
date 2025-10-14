@@ -5,6 +5,7 @@ This module contains various MDP environments used to test and validate
 the quasi-hyperbolic discounting algorithms.
 """
 
+import math
 import numpy as np
 from typing import Tuple, Optional, Dict
 from abc import ABC, abstractmethod
@@ -74,7 +75,7 @@ class InventoryMDP(MDPEnvironment):
         if demand_prob is None:
             poisson_param = 3.0
             self.demand_prob = np.array([
-                np.exp(-poisson_param) * (poisson_param ** k) / np.math.factorial(k)
+                math.exp(-poisson_param) * (poisson_param ** k) / math.factorial(k)
                 for k in range(max_inventory + 1)
             ])
             self.demand_prob /= self.demand_prob.sum()
@@ -223,3 +224,235 @@ class GridWorldMDP(MDPEnvironment):
         self.state = new_state
         
         return self.state, reward, done, {'position': (x, y)}
+
+
+class PoleBalancingMDP(MDPEnvironment):
+    """Physics-based pole balancing environment with quasi-hyperbolic MDP interface."""
+
+    def __init__(self,
+                 min_x: float = -2.4,
+                 max_x: float = 2.4,
+                 max_speed: float = 2.5,
+                 force_mag: float = 10.0,
+                 wind_force_max: float = 3.0,
+                 wind_turbulence: float = 0.5,
+                 time_step: float = 0.02,
+                 max_time: float = 10.0,
+                 angle_reward_threshold: float = np.deg2rad(12),
+                 angle_failure: float = np.deg2rad(45),
+                 length_range: Tuple[float, float] = (0.5, 2.0),
+                 mass_per_meter: float = 0.5,
+                 n_position_bins: int = 7,
+                 n_velocity_bins: int = 7,
+                 n_angle_bins: int = 11,
+                 n_ang_velocity_bins: int = 7,
+                 n_length_bins: int = 3,
+                 fall_penalty: float = 10.0,
+                 success_bonus: float = 2.0):
+        """
+        Initialize pole balancing environment.
+
+        Args:
+            min_x: Minimum cart position.
+            max_x: Maximum cart position.
+            max_speed: Maximum cart speed (absolute value).
+            force_mag: Magnitude of control force applied to cart.
+            wind_force_max: Maximum wind force magnitude (absolute value).
+            wind_turbulence: Standard deviation of wind noise per step.
+            time_step: Simulation time step in seconds.
+            max_time: Maximum episode duration in seconds.
+            angle_reward_threshold: Angle within which rewards stay positive.
+            angle_failure: Angle at which the pole is considered to have fallen.
+            length_range: Tuple specifying min and max pole length.
+            mass_per_meter: Mass per meter of pole length.
+            n_position_bins: Number of discrete bins for cart position.
+            n_velocity_bins: Number of discrete bins for cart velocity.
+            n_angle_bins: Number of discrete bins for pole angle.
+            n_ang_velocity_bins: Number of discrete bins for pole angular velocity.
+            n_length_bins: Number of discrete bins for pole length.
+            fall_penalty: Penalty applied when the pole falls.
+            success_bonus: Bonus when the agent balances for the full duration.
+        """
+
+        self.min_x = min_x
+        self.max_x = max_x
+        self.max_speed = max_speed
+        self.force_mag = force_mag
+        self.wind_force_max = wind_force_max
+        self.wind_turbulence = wind_turbulence
+        self.time_step = time_step
+        self.max_time = max_time
+        self.angle_reward_threshold = angle_reward_threshold
+        self.angle_failure = angle_failure
+        self.length_range = length_range
+        self.mass_per_meter = mass_per_meter
+        self.fall_penalty = fall_penalty
+        self.success_bonus = success_bonus
+
+        # Discretization bins
+        self.n_position_bins = n_position_bins
+        self.n_velocity_bins = n_velocity_bins
+        self.n_angle_bins = n_angle_bins
+        self.n_ang_velocity_bins = n_ang_velocity_bins
+        self.n_length_bins = n_length_bins
+
+        self.position_edges = np.linspace(min_x, max_x, n_position_bins + 1)[1:-1]
+        self.velocity_edges = np.linspace(-max_speed, max_speed, n_velocity_bins + 1)[1:-1]
+        self.angle_edges = np.linspace(-angle_failure, angle_failure, n_angle_bins + 1)[1:-1]
+        self.ang_velocity_max = np.pi * 2  # approximate bound
+        self.ang_velocity_edges = np.linspace(-self.ang_velocity_max,
+                                              self.ang_velocity_max,
+                                              n_ang_velocity_bins + 1)[1:-1]
+        self.length_edges = np.linspace(length_range[0], length_range[1], n_length_bins + 1)[1:-1]
+
+        self.bin_sizes = [
+            n_position_bins,
+            n_velocity_bins,
+            n_angle_bins,
+            n_ang_velocity_bins,
+            n_length_bins
+        ]
+        self._n_states = int(np.prod(self.bin_sizes))
+
+        # Dynamics state variables
+        self.gravity = 9.81
+        self.masscart = 1.0
+
+        self._continuous_state = np.zeros(4)
+        self._length = float(length_range[0])
+        self._length_index = 0
+        self._wind_force = 0.0
+        self._time_elapsed = 0.0
+
+        self.masspole = self.mass_per_meter * self._length
+        self.total_mass = self.masscart + self.masspole
+        self.polemass_length = self.masspole * self._length
+
+    @property
+    def n_states(self) -> int:
+        return self._n_states
+
+    @property
+    def n_actions(self) -> int:
+        return 3  # push left, noop, push right
+
+    def reset(self) -> int:
+        """Reset environment with random initial conditions."""
+        x = np.random.uniform(self.min_x * 0.25, self.max_x * 0.25)
+        x_dot = np.random.uniform(-0.5, 0.5)
+        theta = np.random.uniform(-np.deg2rad(6), np.deg2rad(6))
+        theta_dot = np.random.uniform(-0.5, 0.5)
+
+        self._length = np.random.uniform(*self.length_range)
+        self._length_index = self._digitize(self._length, self.length_edges, self.n_length_bins)
+        self.masspole = self.mass_per_meter * self._length
+        self.total_mass = self.masscart + self.masspole
+        self.polemass_length = self.masspole * self._length
+
+        self._continuous_state = np.array([x, x_dot, theta, theta_dot], dtype=float)
+        self._time_elapsed = 0.0
+        self._wind_force = np.random.uniform(-self.wind_force_max, self.wind_force_max)
+
+        return self._encode_state()
+
+    def step(self, action: int) -> Tuple[int, float, bool, Dict]:
+        """Advance the simulation by one time step given an action."""
+        if action < 0 or action >= self.n_actions:
+            raise ValueError(f"Action {action} is invalid for PoleBalancingMDP")
+
+        force = {
+            0: -self.force_mag,
+            1: 0.0,
+            2: self.force_mag
+        }[action]
+
+        # Wind dynamics
+        wind_noise = np.random.normal(0.0, self.wind_turbulence)
+        self._wind_force = np.clip(self._wind_force + wind_noise,
+                                   -self.wind_force_max,
+                                   self.wind_force_max)
+        applied_force = force + self._wind_force
+
+        x, x_dot, theta, theta_dot = self._continuous_state
+
+        # Equations of motion (cart-pole dynamics)
+        sintheta = np.sin(theta)
+        costheta = np.cos(theta)
+        temp = (applied_force + self.polemass_length * theta_dot ** 2 * sintheta) / self.total_mass
+        theta_acc = (self.gravity * sintheta - costheta * temp) / (
+            self._length * (4.0 / 3.0 - self.masspole * costheta ** 2 / self.total_mass)
+        )
+        x_acc = temp - self.polemass_length * theta_acc * costheta / self.total_mass
+
+        x = x + self.time_step * x_dot
+        x_dot = np.clip(x_dot + self.time_step * x_acc, -self.max_speed, self.max_speed)
+        theta = theta + self.time_step * theta_dot
+        theta_dot = np.clip(theta_dot + self.time_step * theta_acc,
+                            -self.ang_velocity_max,
+                            self.ang_velocity_max)
+
+        self._continuous_state = np.array([x, x_dot, theta, theta_dot], dtype=float)
+        self._time_elapsed += self.time_step
+
+        fell = bool(abs(theta) > self.angle_failure or x < self.min_x or x > self.max_x)
+        timed_out = bool(self._time_elapsed >= self.max_time)
+        done = fell or timed_out
+
+        reward = self._compute_reward(theta, x, fell, timed_out)
+
+        info = {
+            'x': x,
+            'x_dot': x_dot,
+            'theta': theta,
+            'theta_dot': theta_dot,
+            'length': self._length,
+            'wind_force': self._wind_force,
+            'time_elapsed': self._time_elapsed,
+            'terminated_reason': 'fall' if fell else ('timeout' if timed_out else None)
+        }
+
+        return self._encode_state(), reward, done, info
+
+    def _digitize(self, value: float, edges: np.ndarray, n_bins: int) -> int:
+        """Digitize a continuous value into discrete bins."""
+        if n_bins == 1:
+            return 0
+        idx = int(np.digitize([value], edges)[0])
+        return int(np.clip(idx, 0, n_bins - 1))
+
+    def _encode_state(self) -> int:
+        x, x_dot, theta, theta_dot = self._continuous_state
+        indices = [
+            self._digitize(x, self.position_edges, self.n_position_bins),
+            self._digitize(x_dot, self.velocity_edges, self.n_velocity_bins),
+            self._digitize(theta, self.angle_edges, self.n_angle_bins),
+            self._digitize(theta_dot, self.ang_velocity_edges, self.n_ang_velocity_bins),
+            self._length_index
+        ]
+
+        index = indices[0]
+        for dim in range(1, len(indices)):
+            index = index * self.bin_sizes[dim] + indices[dim]
+        return int(index)
+
+    def _compute_reward(self, theta: float, x: float, fell: bool, timed_out: bool) -> float:
+        """Compute reward based on pole angle and episode status."""
+        angle_error = abs(theta)
+        if angle_error <= self.angle_reward_threshold:
+            upright_reward = 1.0 - angle_error / max(self.angle_reward_threshold, 1e-6)
+        else:
+            excess = angle_error - self.angle_reward_threshold
+            scale = max(self.angle_failure - self.angle_reward_threshold, 1e-6)
+            upright_reward = 1.0 - (self.angle_reward_threshold / max(self.angle_reward_threshold, 1e-6))
+            upright_reward -= excess / scale
+            upright_reward = max(upright_reward, -1.0)
+
+        position_penalty = 0.1 * (abs(x) / self.max_x) ** 2
+        reward = upright_reward - position_penalty
+
+        if fell:
+            reward -= self.fall_penalty
+        elif timed_out:
+            reward += self.success_bonus
+
+        return float(reward)

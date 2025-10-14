@@ -14,7 +14,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from algorithms.qh_qlearning import QHQLearning
 from algorithms.qh_policy_evaluation import QHPolicyEvaluation
-from models.mdp_environments import InventoryMDP, GridWorldMDP
+from models.mdp_environments import InventoryMDP, GridWorldMDP, PoleBalancingMDP
 from utils.analysis_tools import calculate_qh_return, validate_qh_parameters
 
 class TestQHQLearning:
@@ -122,6 +122,32 @@ class TestMDPEnvironments:
         assert env._pos_to_state(3, 2) == 11
         assert env._state_to_pos(0) == (0, 0)
         assert env._state_to_pos(11) == (3, 2)
+
+    def test_pole_balancing_mdp(self):
+        """Test pole balancing MDP environment dynamics and discretization."""
+        env = PoleBalancingMDP()
+
+        expected_states = (
+            env.n_position_bins
+            * env.n_velocity_bins
+            * env.n_angle_bins
+            * env.n_ang_velocity_bins
+            * env.n_length_bins
+        )
+
+        assert env.n_states == expected_states
+        assert env.n_actions == 3
+
+        state = env.reset()
+        assert 0 <= state < env.n_states
+
+        next_state, reward, done, info = env.step(1)
+
+        assert 0 <= next_state < env.n_states
+        assert isinstance(reward, float)
+        assert isinstance(done, bool)
+        assert 'theta' in info
+        assert 'wind_force' in info
 
 
 class TestAnalysisTools:
