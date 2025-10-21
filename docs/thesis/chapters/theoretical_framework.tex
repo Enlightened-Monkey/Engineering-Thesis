@@ -2,25 +2,42 @@
 
 \section{Definicja modelu}
 
-Rozważamy markowski proces decyzyjny z dyskontowaniem quasi-hiperbolicznym, definiowany przez krotkę $(S, A, P, R, \sigma, \gamma)$, gdzie:
+Model Markowskiego procesu decyzyjnego z dyskontowaniem quasi-hiperbolicznym jest zdefiniowany jako:  $M = (S, A, q, r, \alpha, \beta)$, gdzie:
 
 \begin{itemize}
-\item $S$ - przestrzeń stanów
-\item $A$ - przestrzeń akcji  
-\item $P$ - funkcja przejść
-\item $R$ - funkcja nagród
-\item $\sigma \in [0,1]$ - parametr skłonności do teraźniejszości
-\item $\gamma \in [0,1)$ - standardowy współczynnik dyskontowania wykładniczego
+\item $S$ - zbiór stanów
+\item $A$ - zbiór akcji
+\item $q$ - prawdopodobieństwo przejścia $q(s'|s,a)$
+\item $r$ - $S \times A \rightarrow R$, funkcja nagrody
+\item $\alpha > 0$ - parametr skłonności do teraźniejszości
+\item $\beta \in [0,1)$ - standardowy współczynnik dyskontowania wykładniczego
 \end{itemize}
 
-\section{Funkcja wartości}
-
-Skumulowany zdyskontowany zwrot w modelu quasi-hiperbolicznym ma postać:
+Oznaczmy przez:
+\begin{enumerate}
+\item $\Pr(A)$ - zbiór miar propabilistycznych nad zbiorem $A$; ponieważ $A$ jest skończony, każda miara propabilistyczna może być reprezentowana jako wektor w przestrzeni euklidesowej $\mathbb{R}^{|A|}$.
+\item $\mathcal{H}_n$ - zbiór historii procesu decyzyjnego do czasu $n$, gdzie każda historia $h_n \in \mathcal{H}_n$ ma postać $h_n = (s_0, a_0, s_1, a_1, \ldots, s_n)$ oraz $h_0 = s_0$.
+\end{enumerate}
+\section{Polityki}
+Polityką bądź strategią decydennta nazyamy ciąg $\phi = (\phi_0, \phi_1, \ldots)$, gdzie $\phi_n$ jest funkcją określoną na zbiorze historii procesu do momentu $n$  zbiór Pr(A), tznn. $\phi_n : \mathcal{H}_n \rightarrow \Pr(A)$. Innymi słowy $\phi_n(h_n) \in \Pr(A)$ dla każdej historii $h_n \in \mathcal{H}_n$, $n \in \mathbb{N} \sum {0} = \mathbb{N}_0$.
+1. Polityki Markowskie, to takie, które zależą od aktualnego stanu i czasu.
+Wtedy $\phi = (\phi_0, \phi_1, \ldots)$ , gdzie $\phi_n : S \rightarrow \Pr(A)$.
+2. Polityki stacjonarne, to takie, które zależą tylko od aktualnego stanu.
+Wtedy $\phi = (\phi_0, \phi_0, \ldots)$ , gdzie $\phi_0 : S \rightarrow \Pr(A)$.
+\section{Funkcja zwrotu}
+Wypłata zdyskontowana w nieskończonym horyzoncie czasowym dla polityki $\phi$ i stanu początkowego $s_0$ jest dana wyrażeniem
 \begin{equation}
-G = r_0 + \sigma \sum_{t=1}^{\infty} \gamma^t r_t
+J_{\phi}^{\alpha,\beta}(s_0)
+= \mathbb{E}_{\substack{a_0 \sim \phi_0(\cdot \mid s_0)\\s' \sim q(\cdot \mid s,a_0)}} \left[ r(s_0,a_0)
+	+ \alpha\, \beta J_{\phi}^{\beta}(s',\overrightarrow{\phi}) \right],
+\label{eq:qh-return}
 \end{equation}
-
-gdzie $r_t$ oznacza nagrodę w czasie $t$.
+gdzie $\overrightarrow{\phi}$ = $(\phi_1, \phi_2, \ldots)$, a $J_{\phi}^{\beta}(s)$ oznacza stanndardową Wypłatę oczekiwaną z dyskontowaniem wykładniczym:
+\begin{equation}
+J_{\phi}^{\beta}(s', (\overrightarrow{\phi_n})^{\infty}_1) =  \sum_{n=1}^{\infty} \beta^{n-1} r^{(n)}(s', \overrightarrow{\phi}).
+\label{eq:beta-value}
+\end{equation}
+a $r^{(n)}(s', \overrightarrow{\phi})$ jest oczekiwaną nagrodą w kroku $n$ przy początkowym stanie $s'$ i polityce $\overrightarrow{\phi}$.
 
 \section{Optymalna polityka}
 
