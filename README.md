@@ -158,6 +158,32 @@ pdflatex main.tex
 pdflatex main.tex
 ```
 
+### Managing Large Files with Git LFS
+
+The repository relies on [Git Large File Storage](https://git-lfs.com/) for binaries like thesis PDFs and reference materials.
+
+- Install Git LFS once per machine:
+  ```bash
+  git lfs install
+  ```
+- Track new binary patterns before committing them (examples):
+  ```bash
+  git lfs track "*.pdf"
+  git lfs track "*.npz"
+  git lfs track "data/results/*.json"
+  ```
+  This updates `.gitattributes`; commit the change so teammates get the same rules.
+- Add, commit, and push as usual:
+  ```bash
+  git add path/to/artifact
+  git commit -m "Add new experiment artifacts"
+  git push origin main
+  ```
+- If you need to force-upload all LFS objects (for example on CI):
+  ```bash
+  git lfs push --all origin main
+  ```
+
 ## Research Background
 
 ### Literature
