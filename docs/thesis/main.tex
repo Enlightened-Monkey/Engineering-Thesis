@@ -1,24 +1,35 @@
-\documentclass[12pt,a4paper]{report}
-\usepackage[utf8]{inputenc}
-\usepackage[polish]{babel}
-\usepackage[T1]{fontenc}
-\usepackage{amsmath}
-\usepackage{amsfonts}
-\usepackage{amssymb}
-\usepackage{graphicx}
+\def\koloroweLinki{wybrane}
+\documentclass[inzynierska]{pwr_wmat_praca_dyplomowa}
+
+% Additional packages required by the thesis content
 \usepackage{algorithm}
 \usepackage{algorithmic}
 \usepackage{natbib}
 
-\title{Algorytmy oparte o wzmocnione nauczanie maszynowe w dyskontowanych modelach markowskich}
-\author{[Nazwa Autora]}
-\date{\today}
+% Thesis metadata (fill in all placeholders before submission)
+\autor{Michał Wrona}
+\csname tytul\endcsname{Algorytmy oparte o wzmocnione nauczanie maszynowe w dyskontowanych modelach markowskich}
+\csname tytulang\endcsname{Reinforcement learning algorithms in discounted Markov decision processes}
+\opiekun{prof. dr hab. inż. Anna Jaśkiewicz}
+\kierunekstudiow{Matematyka Stosowana}
+\kierunekstudiowang{Mathematics}
+\specjalnosc{[Specjalność]}
+\specjalnoscang{[Specialization in English]}
+\streszczenie{W pracy rozważony zostanie model markowskich procesów decyzyjnych, w których tradycyjne dyskontowanie zostanie zastąpione przez dyskontowanie quasi-hiperboliczne. Pozwala ono lepiej uwzględnić niespójność czasową decydenta. W pracy zostaną omówione algorytmy obliczania funkcji wartości oraz optymalnej polityki dla decydenta, który zobowiązuje się dostosowania strategii
+optymalnej obliczonej na początku procesu (tzw. precommitted agent).
+Autor wykorzysta te algorytmy do znalezienia polityki optymalnej w modelu gromadzenia zapasów.
+Niestety taka polityka nie będzie spójna czasowo.}
+\streszczenieang{[Abstract to be completed -- up to 530 characters.]}
+\slowakluczowe{90C39 -- Programowanie dynamiczne; 90C40 -- Procesy markowskie; 90B05 -- Teoria zapasów; 93E03 -- Sterowanie stochastyczne; 93E35 -- Estymacja stochastyczna}
+\slowakluczoweang{[Keywords to be completed -- up to 150 characters.]}
 
 \begin{document}
 
+\frontmatter
 \maketitle
 
-\tableofcontents
+\mainmatter
+\csname tableofcontents\endcsname
 
 \input{chapters/introduction}
 \input{chapters/literature_review}
@@ -30,5 +41,6 @@
 
 \bibliographystyle{plain}
 \bibliography{bibliography/references}
+
 
 \end{document}
