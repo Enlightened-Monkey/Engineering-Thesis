@@ -2,7 +2,7 @@
 
 \section{Definicja modelu}
 
-Model Markowskiego procesu decyzyjnego z dyskontowaniem quasi-hiperbolicznym jest zdefiniowany jako:  $M = (S, A, q, r, \alpha, \beta)$, gdzie:
+Model markowskiego procesu decyzyjnego (MDP) z dyskontowaniem quasi-hiperbolicznym jest zdefiniowany jako:  $M = (S, A, q, r, \alpha, \beta)$, gdzie:
 
 \begin{itemize}
 \item $S$ - zbiór stanów
@@ -18,26 +18,93 @@ Oznaczmy przez:
 \item $\Pr(A)$ - zbiór miar propabilistycznych nad zbiorem $A$; ponieważ $A$ jest skończony, każda miara propabilistyczna może być reprezentowana jako wektor w przestrzeni euklidesowej $\mathbb{R}^{|A|}$.
 \item $\mathcal{H}_n$ - zbiór historii procesu decyzyjnego do czasu $n$, gdzie każda historia $h_n \in \mathcal{H}_n$ ma postać $h_n = (s_0, a_0, s_1, a_1, \ldots, s_n)$ oraz $h_0 = s_0$.
 \end{enumerate}
+
 \section{Polityki}
-Polityką bądź strategią decydennta nazyamy ciąg $\phi = (\phi_0, \phi_1, \ldots)$, gdzie $\phi_n$ jest funkcją określoną na zbiorze historii procesu do momentu $n$  zbiór Pr(A), tznn. $\phi_n : \mathcal{H}_n \rightarrow \Pr(A)$. Innymi słowy $\phi_n(h_n) \in \Pr(A)$ dla każdej historii $h_n \in \mathcal{H}_n$, $n \in \mathbb{N} \sum {0} = \mathbb{N}_0$.
-1. Polityki Markowskie, to takie, które zależą od aktualnego stanu i czasu.
-Wtedy $\phi = (\phi_0, \phi_1, \ldots)$ , gdzie $\phi_n : S \rightarrow \Pr(A)$.
-2. Polityki stacjonarne, to takie, które zależą tylko od aktualnego stanu.
-Wtedy $\phi = (\phi_0, \phi_0, \ldots)$ , gdzie $\phi_0 : S \rightarrow \Pr(A)$.
-\section{Funkcja zwrotu}
-Wypłata zdyskontowana w nieskończonym horyzoncie czasowym dla polityki $\phi$ i stanu początkowego $s_0$ jest dana wyrażeniem
+
+\begin{enumerate}
+\item Polityką bądź strategią decydenta nazywamy ciąg
+\[
+\phi = (\phi_0, \phi_1, \ldots),
+\]
+gdzie każda reguła decyzyjna $\phi_n$ jest funkcją określoną na zbiorze historii procesu do momentu $n$, tj.
+\[
+\phi_n : \mathcal{H}_n \rightarrow \Pr(A),
+\]
+co oznacza, że $\phi_n(h_n) \in \Pr(A)$ dla każdej historii $h_n \in \mathcal{H}_n$, $n \in \mathbb{N} \cup \{0\} = \mathbb{N}_0$.
+\item Polityki markowskie to takie, które zależą od aktualnego stanu i czasu. Wtedy $\phi = (\phi_0, \phi_1, \ldots)$, gdzie $\phi_n : S \rightarrow \Pr(A)$.
+\item Polityki stacjonarne to takie, które zależą tylko od aktualnego stanu. Wtedy $\phi = (\phi_0, \phi_0, \ldots)$, gdzie $\phi_0 : S \rightarrow \Pr(A)$. W dalszej części pracy będziemy oznaczać polityki stacjonarne przez $\bar\phi$.
+\end{enumerate}
+
+Oznaczmy zbiory polityk przez
+\begin{flalign*}
+  \Phi   &\text{ -- zbiór wszystkich polityk zależnych od historii}    &&\\
+  \Phi_M &\text{ -- zbiór polityk markowskich},                       &&\\
+  \Phi_S &\text{ -- zbiór polityk stacjonarnych}.                    &&
+\end{flalign*}
+
+\section{Funkcja wypłaty}
+Rozważamy oczekiwaną wypłatę w nieskończonym horyzoncie czasowym z dyskontowaniem quasi-hiperbolicznym.
+Współczynniki w kolejnych okresach wynoszą 1, $\alpha \beta$, $\alpha \beta^2$, $\alpha \beta^3$, \ldots.
+Wypłata dyskontowana w nieskończonym horyzoncie czasowym dla polityki $\phi \in \Phi$ i stanu początkowego $s_0$ jest dana wyrażeniem
 \begin{equation}
 J_{\phi}^{\alpha,\beta}(s_0)
-= \mathbb{E}_{\substack{a_0 \sim \phi_0(\cdot \mid s_0)\\s' \sim q(\cdot \mid s,a_0)}} \left[ r(s_0,a_0)
-	+ \alpha\, \beta J_{\phi}^{\beta}(s',\overrightarrow{\phi}) \right],
+= \mathbb{E}_{\substack{a_0 \sim \phi_0(\cdot \mid s_0)\\s' \sim q(\cdot \mid s_0,a_0)}} \left[ r(s_0,a_0)
+    + \alpha\, \beta\, J_{\overrightarrow{\phi}}^{\beta}(s') \right],
 \label{eq:qh-return}
 \end{equation}
-gdzie $\overrightarrow{\phi}$ = $(\phi_1, \phi_2, \ldots)$, a $J_{\phi}^{\beta}(s)$ oznacza stanndardową Wypłatę oczekiwaną z dyskontowaniem wykładniczym:
+gdzie $\overrightarrow{\phi} = (\phi_1, \phi_2, \ldots)$, a $J_{\overrightarrow{\phi}}^{\beta}(s')$ oznacza standardową wypłatę oczekiwaną z dyskontowaniem wykładniczym
 \begin{equation}
-J_{\phi}^{\beta}(s', (\overrightarrow{\phi_n})^{\infty}_1) =  \sum_{n=1}^{\infty} \beta^{n-1} r^{(n)}(s', \overrightarrow{\phi}).
+J_{\overrightarrow{\phi}}^{\beta}(s') =  \sum_{n=1}^{\infty} \beta^{\,n-1}\, r^{(n)}(s', \overrightarrow{\phi}),
 \label{eq:beta-value}
 \end{equation}
-a $r^{(n)}(s', \overrightarrow{\phi})$ jest oczekiwaną nagrodą w kroku $n$ przy początkowym stanie $s'$ i polityce $\overrightarrow{\phi}$.
+przy czym
+\begin{equation}
+r^{(n)}(s', \overrightarrow{\phi}) = \mathbb{E} \bigl[\, r(s_{n-1}, a_{n-1}) \mid s_1 = s',\, \overrightarrow{\phi} \bigr]
+\end{equation}
+jest oczekiwaną nagrodą w $n$-tym kroku procesu, licząc od chwili startu w stanie $s'$ i stosując politykę $\overrightarrow{\phi}$.
+
+\begin{theorem}
+Dla powyższego MDP z dyskontowaniem quasi-hiperbolicznym oraz dowolnej polityki $\phi = (\phi_0,\phi_1,\ldots) \in \Phi$ istnieją reguły decyzyjne $\mu$ i $\bar\phi$ takie, że:
+\[
+J_{\phi}^{\alpha,\beta}(s) = J_{(\mu,\bar\phi)}^{\alpha,\beta}(s), \qquad \forall s \in S,
+\]
+gdzie $(\mu,\bar\phi)$ oznacza politykę, która w pierwszym kroku wykorzystuje $\mu$, a w kolejnych krokach politykę stacjonarną $\bar\phi$.
+\end{theorem}
+
+\begin{proof}
+Niech dyskontowanie quasi-hiperboliczne będzie zadane przez funkcje
+\[
+d(t) = 
+\begin{cases}
+1, & t = 0,\\[2pt]
+\alpha\, \beta^{t}, & t \ge 1.
+\end{cases}
+\]
+Z definicji funkcji wartości otrzymujemy
+\begin{equation}
+J_{\phi}^{\alpha,\beta}(s) = \mathbb{E} \Biggl[ \sum_{t=0}^{\infty} d(t)\, r(s_t,a_t) \,\Bigg|\, s_0 = s \Biggr].
+\label{eq:qh-value-definition}
+\end{equation}
+Warunkując po pierwszej akcji $a_0 \sim \phi_0(\cdot \mid s)$ oraz następnym stanie $s_1 \sim q(\cdot \mid s,a_0)$, otrzymujemy
+\begin{align}
+J_{\phi}^{\alpha,\beta}(s)
+&= \mathbb{E}_{a_0 \sim \phi_0(\cdot \mid s)} \Bigl[\, r(s,a_0) + \mathbb{E} \bigl[ \alpha \beta \sum_{t=1}^{\infty} \beta^{t-1} r(s_t,a_t) \mid s_1, a_0 \bigr] \Bigr] \nonumber\\
+&= \mathbb{E}_{\substack{a_0 \sim \phi_0(\cdot \mid s)\\ s' \sim q(\cdot \mid s,a_0)}} \left[ r(s,a_0) + \alpha\, \beta\, J_{\overrightarrow{\phi}}^{\beta}(s') \right],
+\label{eq:qh-one-step}
+\end{align}
+co jest równaniem \eqref{eq:qh-return}. Dla stałego współczynnika dyskontowania $\beta$ wiadomo (por. klasyczne wyniki programowania dynamicznego), że istnieje stacjonarna polityka $\bar\phi$ taka, iż
+\begin{equation}
+J_{\overrightarrow{\phi}}^{\beta}(s) = J_{\bar\phi}^{\beta}(s), \qquad \forall s \in S.
+\label{eq:stationary-beta}
+\end{equation}
+Wybierzmy $\mu = \phi_0$ oraz skonstruujmy politykę $(\mu,\bar\phi)$: pierwszy krok realizuje $\mu$, a dla $t \ge 1$ stosowana jest $\bar\phi$. Podstawiając \eqref{eq:stationary-beta} do \eqref{eq:qh-one-step} otrzymujemy
+\[
+J_{\phi}^{\alpha,\beta}(s)
+= \mathbb{E}_{\substack{a_0 \sim \mu(\cdot \mid s)\\ s' \sim q(\cdot \mid s,a_0)}} \left[ r(s,a_0) + \alpha\, \beta\, J_{\bar\phi}^{\beta}(s') \right]
+= J_{(\mu,\bar\phi)}^{\alpha,\beta}(s),
+\]
+co kończy dowód.
+\end{proof}
 
 \section{Optymalna polityka}
 

@@ -5,7 +5,8 @@
 \usepackage{algorithm}
 \usepackage{algorithmic}
 \usepackage{natbib}
-
+\usepackage{amsthm}
+\newtheorem{theorem}{Twierdzenie}
 % Thesis metadata (fill in all placeholders before submission)
 \autor{Michał Wrona}
 \csname tytul\endcsname{Algorytmy oparte o wzmocnione nauczanie maszynowe w dyskontowanych modelach markowskich}
@@ -32,12 +33,8 @@ Niestety taka polityka nie będzie spójna czasowo.}
 \csname tableofcontents\endcsname
 
 \input{chapters/introduction}
-\input{chapters/literature_review}
 \input{chapters/theoretical_framework}
 \input{chapters/algorithms}
-\input{chapters/experiments}
-\input{chapters/inventory_model}
-\input{chapters/conclusion}
 
 \bibliographystyle{plain}
 \bibliography{bibliography/references}

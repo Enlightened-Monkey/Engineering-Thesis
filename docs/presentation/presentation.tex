@@ -1,0 +1,38 @@
+\documentclass[aspectratio=169]{beamer}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage{animate}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+
+\usetheme{Madrid}
+\usecolortheme{beaver}
+
+\title{Quasi-Hyperbolic Discounting in Reinforcement Learning}
+\author{Michał [Surname]}
+\institute{Politechnika Wrocławska}
+\date{\today}
+
+\AtBeginSection[]{
+	\begin{frame}
+		\frametitle{Plan prezentacji}
+			ableofcontents[currentsection]
+	\end{frame}
+}
+
+\begin{document}
+
+\input{chapters/title.tex}
+
+\begin{frame}{Plan prezentacji}
+  	ableofcontents
+\end{frame}
+
+\input{chapters/intro.tex}
+\input{chapters/results.tex}
+\input{chapters/summary.tex}
+
+\end{document}
