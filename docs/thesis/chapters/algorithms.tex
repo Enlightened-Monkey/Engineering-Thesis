@@ -2,19 +2,28 @@
 
 \section{Algorytm oceny polityki}
 
-Przedstawiamy algorytm wolny od modelu do oceny polityk w ramach dyskontowania quasi-hiperbolicznego.
+Przedstawiamy algorytm w pełni model-free do oceny polityk w ujęciu dyskontowania quasi-hiperbolicznego.
 
-\begin{algorithm}
-\caption{QH Policy Evaluation}
-\begin{algorithmic}
-\STATE \textbf{Input:} Policy $\pi$, parameters $\sigma$, $\gamma$
-\STATE Initialize $V^0(s) = 0$ for all $s \in S$
-\FOR{$k = 0, 1, 2, \ldots$}
-    \FOR{each state $s \in S$}
-        \STATE Update value function using QH discounting
+\begin{algorithm}[H]
+\caption{Model-Free Policy Evaluation for QH Discounting}
+\begin{algorithmic}[1]
+\STATE \textbf{Input:} Krok uczenia $(\alpha_n)$, $(\beta_n)$; współczynniki dyskontowania $\sigma$, $\gamma$; polityka próbkowania $\nu$; polityki oceniane $\mu$, $\pi$
+\STATE \textbf{Initialize:} $V_0, W_0 \in \mathbb{R}^{|S|}$
+\FOR{$n = 0, 1, 2, \ldots$}
+    \FOR{każdy stan $s \in S$}
+        \STATE Próbkuj $a \sim \nu(\cdot \mid s)$
+        \STATE Zaobserwuj nagrodę $r(s,a)$ oraz stan kolejny $s' \sim P(\cdot \mid s,a)$
+        \STATE Próbkuj $a' \sim \pi(\cdot \mid s')$
+        \STATE Zaobserwuj nagrodę $r(s',a')$
+        \STATE Oblicz cel TD:
+        \STATE \hspace{1em} $r^{\text{target}}_n(s) \gets r(s,a) - (1-\sigma)\,\gamma\,r(s',a') + \gamma\, W_n(s')$
+        \STATE Zaktualizuj $W$:
+        \STATE \hspace{1em} $W_{n+1}(s) \gets W_n(s) + \alpha_n \left[ \frac{\pi(a \mid s)}{\nu(a \mid s)}\, r^{\text{target}}_n(s) - W_n(s) \right]$
+        \STATE Zaktualizuj $V$:
+        \STATE \hspace{1em} $V_{n+1}(s) \gets V_n(s) + \beta_n \left[ \frac{\mu(a \mid s)}{\nu(a \mid s)}\, r^{\text{target}}_n(s) - V_n(s) \right]$
     \ENDFOR
 \ENDFOR
-\STATE \textbf{Output:} Value function $V^\pi$
+\STATE \textbf{Output:} Oszacowanie funkcji wartości $V^{\pi}$
 \end{algorithmic}
 \end{algorithm}
 
@@ -22,17 +31,21 @@ Przedstawiamy algorytm wolny od modelu do oceny polityk w ramach dyskontowania q
 
 Algorytm uczenia Q dla dyskontowania quasi-hiperbolicznego, który znajduje optymalną politykę bez znajomości modelu środowiska.
 
-\begin{algorithm}
-\caption{QH Q-Learning}
-\begin{algorithmic}
-\STATE \textbf{Input:} Parameters $\sigma$, $\gamma$, learning rate $\alpha$
-\STATE Initialize $Q(s,a) = 0$ for all $(s,a) \in S \times A$
-\REPEAT
-    \STATE Choose action using $\epsilon$-greedy policy
-    \STATE Observe reward $r$ and next state $s'$
-    \STATE Update Q-function using QH discounting rule
-\UNTIL{convergence}
-\STATE \textbf{Output:} Optimal Q-function and policy
+\begin{algorithm}[H]
+\caption{QH Q-Learning (Model-Free)}
+\begin{algorithmic}[1]
+\STATE \textbf{Input:} Krok uczenia $(\alpha_n)$, $(\beta_n)$; współczynnik dyskontowania $\gamma$; parametr quasi-hiperboliczny $\sigma$
+\STATE \textbf{Initialize:} $W_0, Q_0 \in \mathbb{R}^{|S| \times |A|}$
+\FOR{$n = 0, 1, 2, \ldots$}
+    \FOR{każdą parę $(s,a) \in S \times A$}
+        \STATE Próbkuj stan kolejny $s' \sim P(\cdot \mid s,a)$, zaobserwuj nagrodę $r(s,a)$
+        \STATE Zaktualizuj $W$:
+        \STATE \hspace{1em} $W_{n+1}(s,a) \gets W_n(s,a) + \alpha_n \Big[ r(s,a) + \gamma\, \max_{a'} W_n(s',a') - W_n(s,a) \Big]$
+        \STATE Zaktualizuj $Q$:
+        \STATE \hspace{1em} $Q_{n+1}(s,a) \gets Q_n(s,a) + \beta_n \Big[ (1-\sigma)\, r(s,a) + \sigma\, W_n(s,a) - Q_n(s,a) \Big]$
+    \ENDFOR
+\ENDFOR
+\STATE \textbf{Output:} Funkcja wartości quasi-hiperbolicznej $Q_n$, funkcja wartości wykładniczej $W_n$ oraz polityki optymalne $\mu^*(s) = \arg\max_a Q(s,a)$, $\pi^*(s) = \arg\max_a W(s,a)$
 \end{algorithmic}
 \end{algorithm}
 
