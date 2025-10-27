@@ -4,6 +4,8 @@
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage{graphicx}
+\usepackage{algorithm}
+\usepackage{algorithmic}
 \usepackage{animate}
 \usepackage{hyperref}
 \hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
@@ -11,15 +13,15 @@
 \usetheme{Madrid}
 \usecolortheme{beaver}
 
-\title{Quasi-Hyperbolic Discounting in Reinforcement Learning}
-\author{Michał [Surname]}
-\institute{Politechnika Wrocławska}
+\title{Algorytmy oparte o wzmocnione nauczanie maszynowe w dyskontowanych modelach markowskich}
+\author{Michał Wrona}
+\institute{Politechnika Wrocławska\\Promotor: prof. dr hab. inż. Anna Jaśkiewicz}
 \date{\today}
 
 \AtBeginSection[]{
 	\begin{frame}
-		\frametitle{Plan prezentacji}
-			ableofcontents[currentsection]
+	\frametitle{Plan prezentacji}
+	\tableofcontents[currentsection]
 	\end{frame}
 }
 
@@ -28,11 +30,14 @@
 \input{chapters/title.tex}
 
 \begin{frame}{Plan prezentacji}
-  	ableofcontents
+	\tableofcontents
 \end{frame}
 
 \input{chapters/intro.tex}
-\input{chapters/results.tex}
+\input{chapters/definitions.tex}
+\input{chapters/model.tex}
+\input{chapters/policy_evaluation.tex}
+\input{chapters/policy_optimization.tex}
 \input{chapters/summary.tex}
 
 \end{document}
