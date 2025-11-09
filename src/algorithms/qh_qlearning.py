@@ -80,6 +80,7 @@ class QHQLearning:
             reward: Received reward
             next_state: Next state
         """
+        
         # Update exponential Q-function
         max_q_exp_next = np.max(self.q_exp[next_state])
         td_error_exp = reward + self.gamma * max_q_exp_next - self.q_exp[state, action]
