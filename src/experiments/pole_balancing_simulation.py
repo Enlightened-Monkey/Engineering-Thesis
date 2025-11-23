@@ -50,6 +50,9 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--env-json", type=Path, default=None, help="Optional JSON with environment config (falls back to metadata)")
     parser.add_argument("--title", type=str, default="Pole Balancing (QH Q-Learning)", help="Title shown on the animation")
     parser.add_argument("--no-blit", action="store_true", help="Disable blitting (useful on some systems)")
+    parser.add_argument("--best-of", type=int, default=1, help="Evaluate multiple seeds and keep the longest-lasting rollout")
+    parser.add_argument("--min-duration", type=float, default=0.0, help="Stop searching once a rollout reaches this duration (seconds)")
+    parser.add_argument("--seed-step", type=int, default=1, help="Increment applied when sweeping seeds with --best-of > 1")
     args = parser.parse_args()
 
     if args.duration <= 0:
@@ -58,6 +61,12 @@ def _parse_args() -> argparse.Namespace:
         parser.error("--fps must be a positive integer")
     if args.dpi <= 0:
         parser.error("--dpi must be positive")
+    if args.best_of <= 0:
+        parser.error("--best-of must be a positive integer")
+    if args.min_duration < 0:
+        parser.error("--min-duration must be non-negative")
+    if args.seed_step <= 0:
+        parser.error("--seed-step must be a positive integer")
 
     return args
 
@@ -111,7 +120,7 @@ def _capture_frame(env, info: Optional[Dict[str, Any]], time_elapsed: float) -> 
     }
 
 
-def _rollout(agent: QHQLearning, env: Any, duration: float, fps: Optional[int], seed: Optional[int]) -> Tuple[List[Dict[str, Any]], int]:
+def _rollout(agent: QHQLearning, env: Any, duration: float, fps: Optional[int], seed: Optional[int]) -> Tuple[List[Dict[str, Any]], int, Dict[str, Any]]:
     if seed is not None:
         np.random.seed(seed)
 
@@ -130,6 +139,11 @@ def _rollout(agent: QHQLearning, env: Any, duration: float, fps: Optional[int], 
     steps_per_frame = max(1, int(round(dt / env.time_step)))
     total_steps = target_frames * steps_per_frame
 
+    steps_taken = 0
+    done = False
+    termination: Optional[str] = None
+    last_info: Optional[Dict[str, Any]] = None
+
     for frame_idx in range(target_frames):
         info: Optional[Dict[str, Any]] = None
         for _ in range(steps_per_frame):
@@ -137,7 +151,11 @@ def _rollout(agent: QHQLearning, env: Any, duration: float, fps: Optional[int], 
             next_state, _, done, info = env.step(action)
             state = next_state
             time_elapsed = info["time_elapsed"] if info and "time_elapsed" in info else env._time_elapsed
+            steps_taken += 1
+            if info is not None:
+                last_info = info
             if done:
+                termination = (info.get("terminated_reason") if info else None) or "timeout"
                 break
         frames.append(_capture_frame(env, info, time_elapsed))
         if done:
@@ -146,7 +164,22 @@ def _rollout(agent: QHQLearning, env: Any, duration: float, fps: Optional[int], 
                 frames.append(dict(last_frame))
             break
 
-    return frames, fps
+    if not done:
+        if last_info and last_info.get("terminated_reason"):
+            termination = str(last_info["terminated_reason"])
+        elif time_elapsed >= env.max_time - 1e-6:
+            termination = "timeout"
+        else:
+            termination = "truncated"
+
+    summary = {
+        "duration": float(time_elapsed),
+        "steps": int(steps_taken),
+        "termination": termination,
+        "target_steps": int(total_steps),
+    }
+
+    return frames, fps, summary
 
 
 def _animate(frames: List[Dict[str, Any]], env: Any, output_path: Path, fps: int, dpi: int, title: str, disable_blit: bool) -> Path:
@@ -214,12 +247,57 @@ def main() -> None:
 
     agent, metadata = QHQLearning.load(args.model, return_metadata=True)
     env_config = _load_env_config(metadata, args.env_json)
-    env = build_env(env_config)
 
-    frames, fps = _rollout(agent, env, duration=args.duration, fps=args.fps, seed=args.seed)
-    output_path = _animate(frames, env, args.output, fps=fps, dpi=args.dpi, title=args.title, disable_blit=args.no_blit)
+    def _run_with_seed(candidate_seed: Optional[int]) -> Dict[str, Any]:
+        local_env = build_env(env_config)
+        rollout_frames, rollout_fps, summary = _rollout(agent, local_env, duration=args.duration, fps=args.fps, seed=candidate_seed)
+        return {
+            "seed": candidate_seed,
+            "frames": rollout_frames,
+            "fps": rollout_fps,
+            "summary": summary,
+            "env": local_env,
+        }
 
-    print(f"Saved animation to {output_path}")
+    best_run: Dict[str, Any]
+    if args.best_of == 1:
+        best_run = _run_with_seed(args.seed)
+    else:
+        base_seed = 0 if args.seed is None else args.seed
+        best_run = _run_with_seed(base_seed)
+        if args.min_duration > 0 and best_run["summary"]["duration"] >= args.min_duration:
+            pass
+        else:
+            for offset in range(1, args.best_of):
+                candidate_seed = base_seed + offset * args.seed_step
+                candidate = _run_with_seed(candidate_seed)
+                cand_duration = candidate["summary"]["duration"]
+                best_duration = best_run["summary"]["duration"]
+                if cand_duration > best_duration:
+                    best_run = candidate
+                if args.min_duration > 0 and cand_duration >= args.min_duration:
+                    best_run = candidate
+                    break
+
+        if args.min_duration > 0 and best_run["summary"]["duration"] < args.min_duration:
+            print(
+                f"WARNING: longest run after {args.best_of} seeds is {best_run['summary']['duration']:.2f}s "
+                f"(< target {args.min_duration:.2f}s)",
+            )
+
+    chosen_env = best_run["env"]
+    frames = best_run["frames"]
+    fps = best_run["fps"]
+    summary = best_run["summary"]
+    chosen_seed = best_run["seed"]
+
+    output_path = _animate(frames, chosen_env, args.output, fps=fps, dpi=args.dpi, title=args.title, disable_blit=args.no_blit)
+
+    seed_msg = "random" if chosen_seed is None else str(chosen_seed)
+    print(
+        f"Saved animation to {output_path} (seed={seed_msg}, duration={summary['duration']:.2f}s, "
+        f"steps={summary['steps']}, termination={summary['termination']})"
+    )
 
 
 if __name__ == "__main__":  # pragma: no cover
