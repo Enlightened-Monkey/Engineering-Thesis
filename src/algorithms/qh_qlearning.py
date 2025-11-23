@@ -12,6 +12,7 @@ Based on:
 from __future__ import annotations
 
 import json
+import warnings
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -28,31 +29,72 @@ class QHQLearning:
     def __init__(self, 
                  n_states: int, 
                  n_actions: int,
-                 sigma: float = 0.8,
-                 gamma: float = 0.95,
-                 alpha: float = 0.1,
-                 epsilon: float = 0.1):
-        """
+                 alpha: float = 0.8,
+                 beta: float = 0.95,
+                 theta_step: float = 0.1,
+                 eta_step: Optional[float] = None,
+                 epsilon: float = 0.1,
+                 **legacy_kwargs: Any):
+        r"""
         Initialize QH Q-Learning algorithm.
         
         Args:
             n_states: Number of states in the MDP
             n_actions: Number of actions in the MDP  
-            sigma: Present-bias parameter (0 <= sigma <= 1)
-            gamma: Standard exponential discount factor (0 <= gamma < 1)
-            alpha: Learning rate
+            alpha: Present-bias parameter ($0 \leq \alpha \leq 1$)
+            beta: Exponential discount factor ($0 \leq \beta < 1$)
+            theta_step: Learning rate for the slow timescale ($\theta_n$)
+            eta_step: Learning rate for the fast timescale ($\eta_n$). Defaults to \texttt{theta\_step} when not provided.
             epsilon: Exploration rate for epsilon-greedy policy
         """
+        sigma_legacy = legacy_kwargs.pop("sigma", None)
+        gamma_legacy = legacy_kwargs.pop("gamma", None)
+        alpha_lr_legacy = legacy_kwargs.pop("alpha_lr", None)
+        learning_rate_legacy = legacy_kwargs.pop("learning_rate", None)
+
+        if sigma_legacy is not None:
+            warnings.warn(
+                "Parameter 'sigma' is deprecated; use 'alpha' for the present-bias value.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            alpha = sigma_legacy
+
+        if gamma_legacy is not None:
+            warnings.warn(
+                "Parameter 'gamma' is deprecated; use 'beta' for the exponential discount factor.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            beta = gamma_legacy
+
+        legacy_lr = alpha_lr_legacy if alpha_lr_legacy is not None else learning_rate_legacy
+        if legacy_lr is not None:
+            warnings.warn(
+                "Legacy learning-rate arguments are deprecated; use 'theta_step' and 'eta_step'.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            theta_step = legacy_lr
+
+        if eta_step is None:
+            eta_step = theta_step
+
+        if legacy_kwargs:
+            unexpected = ", ".join(sorted(legacy_kwargs.keys()))
+            raise TypeError(f"Unexpected keyword arguments: {unexpected}")
+
         self.n_states = n_states
         self.n_actions = n_actions
-        self.sigma = sigma
-        self.gamma = gamma
         self.alpha = alpha
+        self.beta = beta
+        self.theta_step = theta_step
+        self.eta_step = eta_step
         self.epsilon = epsilon
         
         # Initialize Q-functions
-        self.q_exp = np.zeros((n_states, n_actions))  # Exponential Q-function
-        self.q_qh = np.zeros((n_states, n_actions))   # Quasi-hyperbolic Q-function
+        self.W = np.zeros((n_states, n_actions))  # Auxiliary Q-function W
+        self.Q = np.zeros((n_states, n_actions))  # Quasi-hyperbolic Q-function
         
     def get_action(self, state: int, exploration: bool = True) -> int:
         """
@@ -68,29 +110,35 @@ class QHQLearning:
         if exploration and np.random.random() < self.epsilon:
             return np.random.randint(self.n_actions)
         else:
-            return np.argmax(self.q_qh[state])
+            return np.argmax(self.Q[state])
     
     def update(self, state: int, action: int, reward: float, next_state: int) -> None:
-        """
-        Update Q-functions using QH discounting rule.
-        
+        r"""One step of Algorithm 2 from the slides.
+
+        The fast sequence :math:`(\eta_n)` drives the auxiliary baseline ``W`` using
+        :math:`W_{n+1}(s,a) = W_n(s,a) + \eta_n [r + \beta \max_{a'} W_n(s', a') - W_n(s,a)]`.
+        The slow sequence :math:`(\theta_n)` updates the quasi-hyperbolic value ``Q`` via
+        :math:`Q_{n+1}(s,a) = Q_n(s,a) + \theta_n [(1-\alpha) r + \alpha W_{n+1}(s,a) - Q_n(s,a)]`.
+
         Args:
             state: Current state
             action: Action taken
             reward: Received reward
             next_state: Next state
         """
+        # Snapshot W_n(s, a) before the fast update
+        w_prev = self.W[state, action]
+
+        # Fast timescale (\eta_n): exponential baseline W
+        max_w_next = np.max(self.W[next_state])
+        td_error_w = reward + self.beta * max_w_next - w_prev
+        w_new = w_prev + self.eta_step * td_error_w
+        self.W[state, action] = w_new
         
-        # Update exponential Q-function
-        max_q_exp_next = np.max(self.q_exp[next_state])
-        td_error_exp = reward + self.gamma * max_q_exp_next - self.q_exp[state, action]
-        self.q_exp[state, action] += self.alpha * td_error_exp
-        
-        # Update quasi-hyperbolic Q-function
-        max_q_qh_next = np.max(self.q_qh[next_state])
-        qh_target = reward + self.sigma * self.gamma * max_q_qh_next
-        td_error_qh = qh_target - self.q_qh[state, action]
-        self.q_qh[state, action] += self.alpha * td_error_qh
+        # Slow timescale (\theta_n): quasi-hyperbolic Q
+        qh_target = (1.0 - self.alpha) * reward + self.alpha * w_new
+        td_error_q = qh_target - self.Q[state, action]
+        self.Q[state, action] += self.theta_step * td_error_q
     
     def get_policy(self) -> np.ndarray:
         """
@@ -99,7 +147,7 @@ class QHQLearning:
         Returns:
             Policy array where policy[s] gives the optimal action in state s
         """
-        return np.argmax(self.q_qh, axis=1)
+        return np.argmax(self.Q, axis=1)
     
     def get_value_function(self) -> np.ndarray:
         """
@@ -108,7 +156,7 @@ class QHQLearning:
         Returns:
             Value function array
         """
-        return np.max(self.q_qh, axis=1)
+        return np.max(self.Q, axis=1)
 
     # ------------------------------------------------------------------
     # Persistence helpers
@@ -119,24 +167,56 @@ class QHQLearning:
         return {
             "n_states": int(self.n_states),
             "n_actions": int(self.n_actions),
-            "sigma": float(self.sigma),
-            "gamma": float(self.gamma),
-            "alpha": float(self.alpha),
+            "alpha_bias": float(self.alpha),
+            "beta_discount": float(self.beta),
+            "theta_step": float(self.theta_step),
+            "eta_step": float(self.eta_step),
             "epsilon": float(self.epsilon),
-            "q_exp": self.q_exp,
-            "q_qh": self.q_qh,
+            "W": self.W,
+            "Q": self.Q,
+            # Backward compatibility payload
+            "sigma": float(self.alpha),
+            "gamma": float(self.beta),
+            "alpha": float(self.theta_step),
+            "q_exp": self.W,
+            "q_qh": self.Q,
         }
 
     def load_state_dict(self, state: Dict[str, Any]) -> None:
         """Load the agent parameters from a snapshot."""
+        alpha_bias = state.get("alpha_bias")
+        if alpha_bias is None:
+            alpha_bias = state.get("sigma")
+        if alpha_bias is None and "theta_step" in state and "alpha" in state:
+            # New-format save but alias missing; treat alpha as bias only when theta_step present
+            alpha_bias = state.get("alpha")
 
-        self.sigma = float(state["sigma"])
-        self.gamma = float(state["gamma"])
-        self.alpha = float(state["alpha"])
+        beta_discount = state.get("beta_discount")
+        if beta_discount is None:
+            beta_discount = state.get("beta")
+        if beta_discount is None:
+            beta_discount = state.get("gamma")
+
+        if alpha_bias is None or beta_discount is None:
+            raise ValueError("State dict missing required discount parameters.")
+
+        if "theta_step" in state:
+            theta_step = float(state["theta_step"])
+        elif "alpha_lr" in state:
+            theta_step = float(state["alpha_lr"])
+        else:
+            theta_step = float(state.get("alpha", self.theta_step))
+
+        eta_step = float(state.get("eta_step", theta_step))
+
+        self.alpha = float(alpha_bias)
+        self.beta = float(beta_discount)
+        self.theta_step = theta_step
+        self.eta_step = eta_step
         self.epsilon = float(state["epsilon"])
 
-        self.q_exp = np.array(state["q_exp"], copy=True)
-        self.q_qh = np.array(state["q_qh"], copy=True)
+        self.W = np.array(state.get("W", state.get("q_exp")), copy=True)
+        self.Q = np.array(state.get("Q", state.get("q_qh")), copy=True)
 
     def save(self, path: Path | str, metadata: Optional[Dict[str, Any]] = None) -> Path:
         """Persist agent parameters to a compressed ``.npz`` file."""
@@ -173,20 +253,41 @@ class QHQLearning:
         with np.load(source, allow_pickle=True) as data:
             n_states = int(data["n_states"])
             n_actions = int(data["n_actions"])
-            sigma = float(data["sigma"])
-            gamma = float(data["gamma"])
-            alpha = float(data["alpha"])
             epsilon = float(data["epsilon"])
+
+            alpha_bias = data.get("alpha_bias")
+            if alpha_bias is None and "sigma" in data:
+                alpha_bias = data["sigma"]
+            if alpha_bias is None and "alpha" in data and "theta_step" in data:
+                alpha_bias = data["alpha"]
+            alpha_bias = float(alpha_bias) if alpha_bias is not None else 0.8
+
+            beta_discount = data.get("beta_discount")
+            if beta_discount is None and "beta" in data:
+                beta_discount = data["beta"]
+            if beta_discount is None and "gamma" in data:
+                beta_discount = data["gamma"]
+            beta_discount = float(beta_discount) if beta_discount is not None else 0.95
+
+            if "theta_step" in data:
+                theta_step = float(data["theta_step"])
+            elif "alpha_lr" in data:
+                theta_step = float(data["alpha_lr"])
+            else:
+                theta_step = float(data.get("alpha", 0.1))
+
+            eta_step = float(data.get("eta_step", theta_step))
 
             agent = cls(n_states=n_states,
                         n_actions=n_actions,
-                        sigma=sigma,
-                        gamma=gamma,
-                        alpha=alpha,
+                        alpha=alpha_bias,
+                        beta=beta_discount,
+                        theta_step=theta_step,
+                        eta_step=eta_step,
                         epsilon=epsilon)
 
-            agent.q_exp = np.array(data["q_exp"], copy=True)
-            agent.q_qh = np.array(data["q_qh"], copy=True)
+            agent.W = np.array(data.get("W", data.get("q_exp")), copy=True)
+            agent.Q = np.array(data.get("Q", data.get("q_qh")), copy=True)
 
             metadata = None
             if "metadata_json" in data:

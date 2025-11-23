@@ -3,6 +3,7 @@
 from .mdp_environments import (
 	MDPEnvironment,
 	InventoryMDP,
+	InventoryControlMDP,
 	GridWorldMDP,
 	PoleBalancingMDP,
 )

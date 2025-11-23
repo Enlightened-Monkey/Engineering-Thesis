@@ -1,78 +1,66 @@
 \section{Ocena polityki}
 
-\begin{frame}{Ocena polityki}
-\begin{itemize}
-\item Wprowadzenie: ewaluacja wartości dla niestacjonarnej polityki $(\mu, \phi_s)$ w MDP z dyskontowaniem quasi-hiperbolicznym.
-\item Wyprowadzenie wzoru (1): $V^{\alpha, \beta}_{\mu, \phi_s}(s)$ w terminach $V^{\alpha, \beta}_{\phi_s}(s)$.
-\item Algorithm 1: Model-Free Policy Evaluation.
-\item Lemma 1: Operator $T^{\phi_s}$ jako kontrakcja.
-\item Theorem 2: Konwergencja algorytmu.
-\item Powiązanie wyniku z eksperymentami symulacyjnymi.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Wyprowadzenie wzoru (1): Krok 1 -- Definicja z twierdzenia}
-\frametitle{Wyprowadzenie wzoru (1): Punkt wyjścia}
+\begin{frame}{Wyprowadzenie wzoru : Krok 1 -- Definicja z twierdzenia}
+\frametitle{Wyprowadzenie wzoru : Punkt wyjścia}
 Z twierdzenia o redukcji polityk:
 \begin{equation}
-V^{\alpha, \beta}_{\mu, \phi_s}(s) = \sum_a \mu(a\mid s) \left[ r(s, a) + \alpha\beta \sum_{s'} q(s'\mid s, a) \, V^{\beta}_{\phi_s}(s') \right].
+J^{\alpha, \beta}_{\mu, \phi_s}(s) = \sum_a \mu(a\mid s) \left[ r(s, a) + \alpha\beta \sum_{s'} q(s'\mid s, a) \, J^{\beta}_{\phi_s}(s') \right].
 \end{equation}
-Cel: wyrazić zależność wyłącznie przez $V^{\alpha, \beta}_{\phi_s}(s')$, bez jawnego $V^{\beta}$.
+Cel: wyrazić zależność wyłącznie przez $J^{\alpha, \beta}_{\phi_s}(s')$, bez jawnego $J^{\beta}$.
 \end{frame}
 
-\begin{frame}{Wyprowadzenie wzoru (1): Krok 2 -- Definicje wartości stacjonarnej}
-\frametitle{Wyprowadzenie wzoru (1): Definicje dla $\phi_s$}
+\begin{frame}{Wyprowadzenie wzoru : Krok 2 -- Definicje wartości stacjonarnej}
+\frametitle{Wyprowadzenie wzoru : Definicje dla $\phi_s$}
 Dyskontowanie wykładnicze:
 \begin{equation}
-V^{\beta}_{\phi_s}(s') = \mathbb{E}_{\phi_s} [r(s', \cdot)] + \beta \mathbb{E}_{\phi_s, q} [V^{\beta}_{\phi_s}(s'') \mid s'],
+J^{\beta}_{\phi_s}(s') = \mathbb{E}_{\phi_s} [r(s', \cdot)] + \beta \mathbb{E}_{\phi_s, q} [J^{\beta}_{\phi_s}(s'') \mid s'],
 \end{equation}
 gdzie $\mathbb{E}_{\phi_s} [r(s', \cdot)] = \sum_{a'} \phi_s(a'\mid s') \, r(s', a')$.
 
 Quasi-hiperboliczne:
 \begin{equation}
-V_{\phi_s}(s') = \mathbb{E}_{\phi_s} [r(s', \cdot)] + \alpha \beta \mathbb{E}_{\phi_s, q} [V^{\beta}_{\phi_s}(s'') \mid s'].
+J_{\phi_s}(s') = \mathbb{E}_{\phi_s} [r(s', \cdot)] + \alpha \beta \mathbb{E}_{\phi_s, q} [J^{\beta}_{\phi_s}(s'') \mid s'].
 \end{equation}
 \end{frame}
 
-\begin{frame}{Wyprowadzenie wzoru (1): Krok 3 -- Izolacja $\alpha \beta V^{\beta}_{\phi_s}(s')$}
-\frametitle{Wyprowadzenie wzoru (1): Izolacja $\alpha \beta V^{\beta}_{\phi_s}(s')$}
+\begin{frame}{Wyprowadzenie wzoru : Krok 3 -- Izolacja $\alpha \beta J^{\beta}_{\phi_s}(s')$}
+\frametitle{Wyprowadzenie wzoru : Izolacja $\alpha \beta J^{\beta}_{\phi_s}(s')$}
 Pomnóż (2) przez $\alpha \beta$:
 \begin{equation}
-\alpha \beta V^{\beta}_{\phi_s}(s') = \alpha \beta \mathbb{E}_{\phi_s} [r(s', \cdot)] + \alpha \beta^2 \mathbb{E}_{\phi_s, q} [V^{\beta}_{\phi_s}(s'') \mid s'].
+\alpha \beta J^{\beta}_{\phi_s}(s') = \alpha \beta \mathbb{E}_{\phi_s} [r(s', \cdot)] + \alpha \beta^2 \mathbb{E}_{\phi_s, q} [J^{\beta}_{\phi_s}(s'') \mid s'].
 \end{equation}
 
 Pomnóż (3) przez $\beta$:
 \begin{equation}
-\beta V_{\phi_s}(s') = \beta \mathbb{E}_{\phi_s} [r(s', \cdot)] + \alpha \beta^2 \mathbb{E}_{\phi_s, q} [V^{\beta}_{\phi_s}(s'') \mid s'].
+\beta J_{\phi_s}(s') = \beta \mathbb{E}_{\phi_s} [r(s', \cdot)] + \alpha \beta^2 \mathbb{E}_{\phi_s, q} [J^{\beta}_{\phi_s}(s'') \mid s'].
 \end{equation}
 \end{frame}
 
-\begin{frame}{Wyprowadzenie wzoru (1): Krok 4 -- Odejmowanie}
-\frametitle{Wyprowadzenie wzoru (1): Kluczowe odejmowanie}
-Odejmij (5) od (4):
+\begin{frame}{Wyprowadzenie wzoru : Krok 4 -- Odejmowanie}
+\frametitle{Wyprowadzenie wzoru : Kluczowe odejmowanie}
+Odejmij (7) od (6):
 \begin{equation}
-\alpha \beta V^{\beta}_{\phi_s}(s') - \beta V_{\phi_s}(s') = \alpha \beta \mathbb{E}_{\phi_s} [r(s', \cdot)] - \beta \mathbb{E}_{\phi_s} [r(s', \cdot)].
+\alpha \beta J^{\beta}_{\phi_s}(s') - \beta J_{\phi_s}(s') = \alpha \beta \mathbb{E}_{\phi_s} [r(s', \cdot)] - \beta \mathbb{E}_{\phi_s} [r(s', \cdot)].
 \end{equation}
-Skraca się $\alpha \beta^2 \mathbb{E}[V^{\beta}_{\phi_s}(s'')]$!
+Skraca się $\alpha \beta^2 \mathbb{E}[J^{\beta}_{\phi_s}(s'')]$!
 
 Uproszczenie:
 \begin{equation}
-\alpha \beta V^{\beta}_{\phi_s}(s') - \beta V_{\phi_s}(s') = - (1 - \alpha) \beta \sum_{a'} \phi_s(a'\mid s') r(s', a').
+\alpha \beta J^{\beta}_{\phi_s}(s') - \beta J_{\phi_s}(s') = - (1 - \alpha) \beta \sum_{a'} \phi_s(a'\mid s') r(s', a').
 \end{equation}
 Przekształcenie:
 \begin{equation}
-\alpha \beta V^{\beta}_{\phi_s}(s') = \beta V_{\phi_s}(s') - (1 - \alpha) \beta \mathbb{E}_{\phi_s} [r(s', \cdot)].
+\alpha \beta J^{\beta}_{\phi_s}(s') = \beta J_{\phi_s}(s') - (1 - \alpha) \beta \mathbb{E}_{\phi_s} [r(s', \cdot)].
 \end{equation}
 \end{frame}
 
-\begin{frame}{Wyprowadzenie wzoru (1): Krok 5 -- Podstawienie}
-\frametitle{Wyprowadzenie wzoru (1): Podstawienie do (1)}
-Podstaw (8) do wzoru początkowego:
+\begin{frame}{Wyprowadzenie wzoru : Krok 5 -- Podstawienie}
+\frametitle{Wyprowadzenie wzoru : Podstawienie do (3)}
+Podstaw (10) do wzoru początkowego:
 \begin{align}
-V^{\alpha, \beta}_{\mu, \phi_s}(s) &= \sum_a \mu(a\mid s) \left[ r(s, a) + \sum_{s'} q(s'\mid s, a) \left( \beta V_{\phi_s}(s') - (1 - \alpha) \beta \mathbb{E}_{\phi_s} [r(s', \cdot)] \right) \right] \\
-&= \sum_a \mu(a\mid s) \left[ r(s, a) + \sum_{s'} q(s'\mid s, a) \left[ -(1 - \alpha)\beta \sum_{a'} \phi_s(a'\mid s') r(s', a') + \beta V_{\phi_s}(s') \right] \right].
+J^{\alpha, \beta}_{\mu, \phi_s}(s) &= \sum_a \mu(a\mid s) \left[ r(s, a) + \sum_{s'} q(s'\mid s, a) \left( \beta J_{\phi_s}(s') - (1 - \alpha) \beta \mathbb{E}_{\phi_s} [r(s', \cdot)] \right) \right] \\
+&= \sum_a \mu(a\mid s) \left[ r(s, a) + \sum_{s'} q(s'\mid s, a) \left[ -(1 - \alpha)\beta \sum_{a'} \phi_s(a'\mid s') r(s', a') + \beta J_{\phi_s}(s') \right] \right].
 \end{align}
-To jest wzór (1) -- zamknięta rekurencja w QH!
 \end{frame}
 
 \begin{frame}[fragile]{Algorithm 1: Model-Free Policy Evaluation}
@@ -81,7 +69,7 @@ To jest wzór (1) -- zamknięta rekurencja w QH!
 \caption{Model-Free Policy Evaluation for QH Discounting}
 \begin{algorithmic}[1]
 \REQUIRE Stepsizes $(\eta_n)$, $(\theta_n)$; discount factors $\alpha, \beta$; sampling policy $\nu$; evaluation policies $\mu, \phi_s$
-\STATE \textbf{Initialize:} $V_0, W_0 \in \mathbb{R}^{|S|}$
+\STATE \textbf{Initialize:} $J_0, W_0 \in \mathbb{R}^{|S|}$
 \FOR{$n = 0, 1, 2, \dots$}
 \FOR{$s \in S$}
 \STATE Sample $a \sim \nu(\cdot|s)$
@@ -90,7 +78,7 @@ To jest wzór (1) -- zamknięta rekurencja w QH!
 \STATE Observe reward $r(s', a')$
 \STATE Compute TD target: $r^{\text{target}}_n(s) \leftarrow r(s, a) - (1 - \alpha)\beta \, r(s', a') + \beta W_n(s')$
 \STATE Update $W$: $W_{n+1}(s) \leftarrow W_n(s) + \eta_n \left[ \frac{\phi_s(a|s)}{\nu(a|s)} r^{\text{target}}_n(s) - W_n(s) \right]$
-\STATE Update $V$: $V_{n+1}(s) \leftarrow V_n(s) + \theta_n \left[ \frac{\mu(a|s)}{\nu(a|s)} r^{\text{target}}_n(s) - V_n(s) \right]$
+\STATE Update $J$: $J_{n+1}(s) \leftarrow J_n(s) + \theta_n \left[ \frac{\mu(a|s)}{\nu(a|s)} r^{\text{target}}_n(s) - J_n(s) \right]$
 \ENDFOR
 \ENDFOR
 \end{algorithmic}
@@ -101,25 +89,19 @@ To jest wzór (1) -- zamknięta rekurencja w QH!
 \frametitle{Lemma 1: Operator typu Bellmana dla QH}
 Definicja operatora $T^{\phi_s}: \mathbb{R}^{|S|} \to \mathbb{R}^{|S|}$:
 \begin{equation}
-(T^{\phi_s} V)(s) = \sum_a \phi_s(a\mid s) \left[ r(s, a) + \sum_{s'} q(s'\mid s, a) \left[ -(1 - \alpha)\beta \sum_{a'} \phi_s(a'\mid s') r(s', a') + \beta V(s') \right] \right].
+(T^{\phi_s} J)(s) = \sum_a \phi_s(a\mid s) \left[ r(s, a) + \sum_{s'} q(s'\mid s, a) \left[ -(1 - \alpha)\beta \sum_{a'} \phi_s(a'\mid s') r(s', a') + \beta J(s') \right] \right].
 \end{equation}
 \begin{itemize}
 \item $T^{\phi_s}$ jest kontrakcją w normie $\max$ z faktorem $\beta < 1$.
-\item Jedyny punkt stały $V = T^{\phi_s} V$ to $V^{\alpha, \beta}_{\phi_s}$.
+\item Jedyny punkt stały $J = T^{\phi_s} J$ to $J^{\alpha, \beta}_{\phi_s}$.
 \end{itemize}
-Dowód: $\|T^{\phi_s} V_1 - T^{\phi_s} V_2\|_\infty \leq \beta \|V_1 - V_2\|_\infty$ (twierdzenie Banacha).
+Dowód: $\|T^{\phi_s} J_1 - T^{\phi_s} J_2\|_\infty \leq \beta \|J_1 - J_2\|_\infty$ (twierdzenie Banacha).
 \end{frame}
 
-\begin{frame}{Theorem 2: Konwergencja Algorithm 1}
-\frametitle{Theorem 2: Convergence of Policy Evaluation}
-Założenia: kroki uczenia $\eta_n, \theta_n$ spełniają warunki Robbins-Monro: $\sum_n \eta_n = \infty$, $\sum_n \eta_n^2 < \infty$ oraz $\sum_n \theta_n = \infty$, $\sum_n \theta_n^2 < \infty$; dodatkowo $\theta_n / \eta_n \to 0$ (dwie skale czasowe).
+\begin{frame}{Twierdzenie 2: Konwergencja Algorithm 1}
+\frametitle{Twierdzenie 2: Konwergencja ocny polityki}
+Założenia: kroki uczenia $\eta_n, \theta_n$ spełniają warunki Robbins-Monro: \\ $\sum_n \eta_n = \infty$, $\sum_n \eta_n^2 < \infty$ oraz $\sum_n \theta_n = \infty$, $\sum_n \theta_n^2 < \infty$; \\ dodatkowo $\theta_n / \eta_n \to 0$ (dwie skale czasowe).
 
-Wynik: ciągi $(W_n, V_n)$ zbieżne prawie na pewno do $(V^{\alpha, \beta}_{\phi_s}, V^{\alpha, \beta}_{\mu, \phi_s})$.
+Wynik: ciągi $(W_n, J_n)$ zbieżne prawie na pewno do $(J^{\alpha, \beta}_{\phi_s}, J^{\alpha, \beta}_{\mu, \phi_s})$.
 
-Dowód szkic:
-\begin{itemize}
-\item Szybka skala ($W_n$): stochastyczna aproksymacja do $T^{\phi_s} W_n - W_n +$ szum; konwergencja do $V_{\phi_s}$.
-\item Wolna skala ($V_n$): traktujemy $W_n \approx V_{\phi_s}$ jako quasi-stałe; układ liniowy prowadzi do $V_{\mu, \phi_s}$.
-\end{itemize}
-Importance sampling koryguje uczenie off-policy względem $\nu$.
 \end{frame}

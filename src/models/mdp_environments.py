@@ -141,6 +141,113 @@ class InventoryMDP(MDPEnvironment):
         }
 
 
+class InventoryControlMDP(MDPEnvironment):
+    """Finite inventory control problem with explicit cost structure.
+
+    This environment encodes the benchmark described in
+    *Reinforcement Learning with Quasi-Hyperbolic Discounting* where:
+
+    - State space: inventory level ``S = {0, …, M}``
+    - Action space: order quantity ``A = {0, …, M}``
+    - Demand: finite-valued random variable with configurable support
+    - Immediate reward: selling revenue minus procurement and holding costs
+
+    The default parameters follow the numerical example from the paper:
+
+    ``M = 2``, procurement cost ``c = 5``, holding cost ``h = 2``,
+    selling price ``p = 9``, demand support ``{0, 1, 2}`` with
+    probabilities ``(0.2, 0.3, 0.5)``.
+    """
+
+    def __init__(self,
+                 max_inventory: int = 2,
+                 procurement_cost: float = 5.0,
+                 holding_cost: float = 2.0,
+                 selling_price: float = 9.0,
+                 demand_support: Optional[np.ndarray] = None,
+                 demand_prob: Optional[np.ndarray] = None,
+                 initial_state: int = 0):
+        self.max_inventory = int(max_inventory)
+        self.procurement_cost = float(procurement_cost)
+        self.holding_cost = float(holding_cost)
+        self.selling_price = float(selling_price)
+        self.initial_state = int(initial_state)
+
+        if demand_support is None:
+            self.demand_support = np.arange(self.max_inventory + 1)
+        else:
+            self.demand_support = np.asarray(demand_support, dtype=int)
+
+        if demand_prob is None:
+            if len(self.demand_support) < self.max_inventory + 1:
+                raise ValueError(
+                    "Default demand probabilities require support {0,…,M}."
+                )
+            demand_prob = np.array([0.2, 0.3, 0.5], dtype=float)
+            if len(self.demand_support) != len(demand_prob):
+                # Pad or trim to match support size when M != 2
+                demand_prob = np.ones(len(self.demand_support), dtype=float)
+        else:
+            demand_prob = np.asarray(demand_prob, dtype=float)
+
+        if demand_prob.shape[0] != self.demand_support.shape[0]:
+            raise ValueError("Demand support and probabilities must align in length.")
+
+        total_prob = demand_prob.sum()
+        if total_prob <= 0:
+            raise ValueError("Demand probabilities must sum to a positive value.")
+
+        self.demand_prob = demand_prob / total_prob
+
+        if not 0 <= self.initial_state <= self.max_inventory:
+            raise ValueError("Initial state must be within [0, max_inventory].")
+
+        self.state = self.initial_state
+
+    @property
+    def n_states(self) -> int:
+        return self.max_inventory + 1
+
+    @property
+    def n_actions(self) -> int:
+        return self.max_inventory + 1
+
+    def reset(self) -> int:
+        self.state = self.initial_state
+        return self.state
+
+    def step(self, action: int) -> Tuple[int, float, bool, Dict]:
+        if not 0 <= action <= self.max_inventory:
+            raise ValueError(f"Action {action} outside admissible range [0, {self.max_inventory}].")
+
+        inventory_pre_order = self.state
+        inventory_post_order = min(inventory_pre_order + action, self.max_inventory)
+
+        demand = int(np.random.choice(self.demand_support, p=self.demand_prob))
+        sales = min(inventory_post_order, demand)
+        next_state = max(inventory_post_order - demand, 0)
+
+        holding_inventory = next_state
+        revenue = self.selling_price * sales
+        procurement_cost = self.procurement_cost * action
+        holding_cost = self.holding_cost * holding_inventory
+        reward = revenue - procurement_cost - holding_cost
+
+        self.state = next_state
+
+        return self.state, reward, False, {
+            "inventory_pre_order": inventory_pre_order,
+            "inventory_post_order": inventory_post_order,
+            "demand": demand,
+            "sales": sales,
+            "holding_inventory": holding_inventory,
+            "procurement_cost": procurement_cost,
+            "holding_cost": holding_cost,
+            "revenue": revenue,
+            "immediate_reward": reward,
+        }
+
+
 class GridWorldMDP(MDPEnvironment):
     """
     Simple GridWorld environment for testing algorithms.

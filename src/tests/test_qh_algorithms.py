@@ -22,14 +22,14 @@ class TestQHQLearning:
     
     def test_initialization(self):
         """Test proper initialization of QH Q-Learning."""
-        agent = QHQLearning(n_states=5, n_actions=3, sigma=0.8, gamma=0.95)
+        agent = QHQLearning(n_states=5, n_actions=3, alpha=0.8, beta=0.95)
         
         assert agent.n_states == 5
         assert agent.n_actions == 3
-        assert agent.sigma == 0.8
-        assert agent.gamma == 0.95
-        assert agent.q_exp.shape == (5, 3)
-        assert agent.q_qh.shape == (5, 3)
+        assert agent.alpha == 0.8
+        assert agent.beta == 0.95
+        assert agent.W.shape == (5, 3)
+        assert agent.Q.shape == (5, 3)
         
     def test_action_selection(self):
         """Test action selection methods."""
@@ -37,7 +37,7 @@ class TestQHQLearning:
         
         # Test deterministic action selection
         agent.epsilon = 0.0
-        agent.q_qh[0, 1] = 1.0  # Make action 1 optimal for state 0
+        agent.Q[0, 1] = 1.0  # Make action 1 optimal for state 0
         action = agent.get_action(0, exploration=False)
         assert action == 1
         
@@ -45,19 +45,19 @@ class TestQHQLearning:
         """Test Q-function update mechanism."""
         agent = QHQLearning(n_states=3, n_actions=2, alpha=1.0)  # Fast learning
         
-        initial_q = agent.q_qh[0, 0]
+        initial_q = agent.Q[0, 0]
         agent.update(state=0, action=0, reward=1.0, next_state=1)
         
         # Q-function should have changed
-        assert agent.q_qh[0, 0] != initial_q
+        assert agent.Q[0, 0] != initial_q
         
     def test_policy_extraction(self):
         """Test policy extraction from Q-functions."""
         agent = QHQLearning(n_states=2, n_actions=3)
         
         # Set up Q-values to make action 2 optimal for both states
-        agent.q_qh[0, 2] = 1.0
-        agent.q_qh[1, 2] = 1.0
+        agent.Q[0, 2] = 1.0
+        agent.Q[1, 2] = 1.0
         
         policy = agent.get_policy()
         assert len(policy) == 2
@@ -70,23 +70,61 @@ class TestPolicyEvaluation:
     
     def test_initialization(self):
         """Test proper initialization."""
-        evaluator = QHPolicyEvaluation(n_states=4, sigma=0.7, gamma=0.9)
+        evaluator = QHPolicyEvaluation(n_states=4, alpha=0.7, beta=0.9)
         
         assert evaluator.n_states == 4
-        assert evaluator.sigma == 0.7
-        assert evaluator.gamma == 0.9
-        assert len(evaluator.v_exp) == 4
-        assert len(evaluator.v_qh) == 4
+        assert evaluator.alpha == 0.7
+        assert evaluator.beta == 0.9
+        assert len(evaluator.W) == 4
+        assert len(evaluator.J) == 4
         
     def test_value_update(self):
         """Test value function updates."""
-        evaluator = QHPolicyEvaluation(n_states=3, alpha_slow=1.0, alpha_fast=1.0)
+        evaluator = QHPolicyEvaluation(n_states=3, theta_step=1.0, eta_step=1.0)
         
-        initial_v_qh = evaluator.v_qh[0]
-        evaluator.update(state=0, reward=1.0, next_state=1)
+        initial_j = evaluator.J[0]
+        evaluator.update(
+            state=0,
+            action=0,
+            reward=1.0,
+            next_state=1,
+            follow_reward=0.5,
+            sampling_prob=1.0,
+            mu_prob=1.0,
+            phi_prob=1.0,
+        )
         
         # Value function should have changed
-        assert evaluator.v_qh[0] != initial_v_qh
+        assert evaluator.J[0] != initial_j
+
+    def test_evaluate_policy_loop(self):
+        """Ensure the full Algorithm 1 driver runs without errors."""
+
+        evaluator = QHPolicyEvaluation(n_states=2, alpha=0.5, beta=0.9)
+
+        transitions = {
+            (0, 0): (0, 0.0),
+            (0, 1): (1, 1.0),
+            (1, 0): (0, 0.5),
+            (1, 1): (1, 1.5),
+        }
+
+        def sampler(state: int, action: int):
+            return transitions[(state, action)]
+
+        policy = np.full((2, 2), 0.5)
+
+        result = evaluator.evaluate_policy(
+            sampler=sampler,
+            sampling_policy=policy,
+            mu_policy=policy,
+            phi_policy=policy,
+            n_iterations=10,
+        )
+
+        assert result['W'].shape == (2,)
+        assert result['J'].shape == (2,)
+        assert len(result['states']) == 10
 
 
 class TestMDPEnvironments:
@@ -187,8 +225,8 @@ class TestIntegration:
         agent = QHQLearning(
             n_states=env.n_states,
             n_actions=env.n_actions,
-            sigma=0.8,
-            gamma=0.95,
+            alpha=0.8,
+            beta=0.95,
             epsilon=0.1
         )
         
@@ -205,15 +243,15 @@ class TestIntegration:
                 state = next_state
         
         # Agent should have learned something (Q-values changed)
-        assert np.any(agent.q_qh != 0)
+        assert np.any(agent.Q != 0)
         
     def test_sigma_parameter_effects(self):
         """Test that different sigma values produce different behaviors."""
         env = GridWorldMDP(width=3, height=3)
         
         # Create agents with different sigma values
-        agent1 = QHQLearning(env.n_states, env.n_actions, sigma=1.0)  # No bias
-        agent2 = QHQLearning(env.n_states, env.n_actions, sigma=0.5)  # Strong bias
+        agent1 = QHQLearning(env.n_states, env.n_actions, alpha=1.0)  # No bias
+        agent2 = QHQLearning(env.n_states, env.n_actions, alpha=0.5)  # Strong bias
         
         # Train both agents briefly
         for agent in [agent1, agent2]:

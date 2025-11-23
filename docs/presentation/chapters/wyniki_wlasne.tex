@@ -1,8 +1,69 @@
 % Own results section frames (placeholders)
+\section{Eksperymenty}
 \begin{frame}{Założenia eksperymentów}
-  % TODO: Summarize experimental setup.
+  \begin{columns}[T]
+  \column{0.48\textwidth}
+    \textbf{Sterowanie zapasami}\smallskip
+    \begin{itemize}
+      \item Dyskretny magazyn o pojemności $M=2$, popyt $D\in\{0,1,2\}$ z rozkładem $(0.2,0.3,0.5)$.
+      \item Koszty: zakup $c=5$, magazynowanie $h=2$, sprzedaż $p=9$ (nagroda to marża minus koszty).
+      \item Algorytm: quasi-hiperboliczna ewaluacja polityki (dwuskalowe aktualizacje $\eta=0.3$, $\theta=0.03$).
+      \item Parametry preferencji: $\sigma=0.3$, $\beta=0.9$.
+      \item 200\,000 iteracji; porównujemy trzy pary polityk $(\mu,\phi_s)$ przy wspólnej polityce próbkowania $\nu$.
+    \end{itemize}
+
+  \column{0.5\textwidth}
+    \textbf{Problem wagonika (cart--pole)}\smallskip
+    \begin{itemize}
+      \item Dyskretyzowana dynamika wózka z kijem: 5 wymiarów stanu (położenie, prędkość, kąt, prędkość kątowa, długość).
+      \item Zakłócenia: turbulencja wiatru do $\pm3\,\mathrm{N}$, zmienny czas trwania epizodu (do 10 s).
+      \item Agent: quasi-hiperboliczny Q-learning ($\sigma=0.7$, $\gamma=0.97$, $\alpha=0.08$) z eksploracją $\varepsilon$ malejącą $0.2\to0.02$.
+      \item Trening na 100k oraz 300k epizodów, ewaluacja na 25 rolloutach bez eksploracji.
+    \end{itemize}
+  \end{columns}
 \end{frame}
 
 \begin{frame}{Wyniki i obserwacje}
-  % TODO: Present key findings and visualizations.
+  \begin{columns}[T]
+  \column{0.5\textwidth}
+  	\textbf{Sterowanie zapasami}\smallskip
+    \begin{itemize}
+      \item Na przygotowanym wykresie: zbieżność normy $\|W_k - V^{\beta}_{\phi_s}\|_2$ w skali logarytmicznej.
+      \item Najlepsza para $(\mu^*,\phi_s^u)$ osiąga końcowy błąd $\approx7.7$, dwie pozostałe stabilizują się ok. $44$.
+      \item Uniformizacja polityki dalszych działań poprawia pokrycie stanów i przyspiesza spadek błędu.
+      \item Niewielka pojemność magazynu pozwala analitycznie weryfikować $V^{\beta}$ (rozwiązanie układu liniowego).
+    \end{itemize}
+
+  \column{0.5\textwidth}
+    \textbf{Problem wagonika}\smallskip
+    \begin{itemize}
+      \item Średnie nagrody po 100k epizodów: $31.9\pm32.7$, średni czas utrzymania $2.46\,\mathrm{s}$ (wszystkie epizody kończą się upadkiem).
+      \item Wydłużenie treningu do 300k epizodów podnosi średnią nagrodę do $59.4\pm61.0$ i średni czas do $3.03\,\mathrm{s}$.
+  \item Najdłuższy rollout utrzymuje kij przez $500$ kroków (pełne $10\,\mathrm{s}$), lecz model nadal bywa wrażliwy na szum.
+  \item Animowane przebiegi (kolejny slajd) pokazują stabilizację i moment utraty równowagi.
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Wizualizacje problemu wagonika}
+  \begin{columns}[T]
+  \column{0.5\textwidth}
+    \centering
+    	\textbf{Trening 100k}
+  \animategraphics[autoplay,loop,height=0.48\textheight,poster=first]{12}{fig/animations/pole_balancing_100k/frame_}{0}{47}
+    \smallskip
+
+  \column{0.5\textwidth}
+    \centering
+    	\textbf{Trening 300k}
+  \animategraphics[autoplay,loop,height=0.48\textheight,poster=first]{12}{fig/animations/pole_balancing_300k/frame_}{0}{59}
+    \smallskip
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Konwergencja ewaluacji polityki}
+  \centering
+  \includegraphics[width=0.86\linewidth]{../../data/plots/policy_evaluation_convergence.png}
+  \smallskip
+  \scriptsize Norma $\|W_k - V^{\beta}_{\phi_s}\|_2$ dla trzech par polityk w zadaniu sterowania zapasami (skala logarytmiczna).
 \end{frame}

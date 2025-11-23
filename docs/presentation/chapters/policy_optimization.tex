@@ -36,8 +36,8 @@ V^{\alpha, \beta}_{\mu^\star, \phi_s^\star}(s) = \max_{\mu \in \Phi_m} \max_{\ph
 W praktyce wystarczy przeszukiwać $\mu^\star \in A^S$ oraz $\phi_s^\star \in A^S$.
 \end{frame}
 
-\begin{frame}{Podsekcja A: Value Iteration Algorithm}
-\frametitle{Podsekcja A: Value Iteration (Model-Based)}
+\begin{frame}{Value Iteration Algorithm}
+\frametitle{Value Iteration (Model-Based)}
 Dostęp do modelu $q$ pozwala wyznaczyć optymalną parę w dwóch krokach:
 \begin{enumerate}
 \item Uruchom standardowy value iteration dla dyskontowania $\beta$ aż do zbieżności $V^{\beta}_\star$ i $\pi^\star_\beta$.
@@ -46,8 +46,8 @@ Dostęp do modelu $q$ pozwala wyznaczyć optymalną parę w dwóch krokach:
 Wynik: $\phi_s^\star = \pi^\star_\beta$, a $(\mu^\star, \phi_s^\star)$ maksymalizuje $V^{\alpha, \beta}$.
 \end{frame}
 
-\begin{frame}[fragile]{Podsekcja B: Algorithm 2 (model-free)}
-\frametitle{Podsekcja B: Model-free QH Q-Learning}
+\begin{frame}[fragile]{Algorithm 2 (model-free)}
+\frametitle{Model-free QH Q-Learning}
 Relacja funkcji Q:
 \begin{equation}
 Q^{\alpha, \beta}_{\mu, \phi_s}(s,a) = (1 - \alpha) r(s,a) + \alpha Q^{\beta}_{\phi_s}(s,a), \qquad Q^{\alpha, \beta}_*(s,a) = (1 - \alpha) r(s,a) + \alpha Q^{\beta}_*(s,a).
@@ -84,13 +84,15 @@ Szkic dowodu:
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Podsumowanie Sekcji IV}
-\frametitle{Podsumowanie: Optimal Control w QH}
-\begin{itemize}
-\item Optymalna para: $(\mu^\star, \phi_s^\star = \pi_\beta^\star)$ jest deterministyczna (Twierdzenie 3).
-\item Model-based: value iteration + maksymalizacja $\alpha\beta$-ważonych wartości.
-\item Model-free: Algorytm 2 estymuje $Q^{\beta}$ i $Q^{\alpha, \beta}$ off-policy; zbieżność gwarantuje Twierdzenie 4.
-\item Zastosowania: inventory control i pole balancing odzyskują rozwiązania quasi-hiperboliczne (sekcja V).
-\end{itemize}
-Most do sekcji V: walidacja empiryczna.
+\begin{frame}{Procedura łączona: Ewaluacja $\to$ Kontrola}
+\frametitle{Jak łączymy Algorytm~1 i~2 w praktyce}
+\begin{enumerate}
+	\item \textbf{Inicjalizacja:} Wybierz politykę próbkowania $\nu$ oraz zestaw par $(\mu, \phi_s)$ do oceny; zainicjalizuj $J$, $W$ i $Q$.
+	\item \textbf{Ewaluacja (Alg.~1):} Uruchom dwuskalową ewaluację polityk, aż $W$ aproksymuje $V^{\beta}_{\phi_s}$, a $J$ zbliży się do $V^{\alpha,\beta}_{\mu,\phi_s}$.
+	\item \textbf{Aktualizacja sterowania (Alg.~2):} Traktuj $W$ jako docelowe wartości eksponencjalne i wykonaj krok QH Q-learningu, aktualizując $Q$ oraz politykę pierwszego kroku $\mu$.
+	\item \textbf{Synteza polityk:} Zaktualizuj $\phi_s(s) = \arg\max_a W(s,a)$ oraz $\mu(s) = \arg\max_a Q(s,a)$; jeśli potrzeba, powtórz kroki 2--3 dla doprecyzowania.
+	\item \textbf{Zatrzymanie:} Monitoruj normy $\|W_{n+1}-W_n\|$, $\|Q_{n+1}-Q_n\|$ i stabilność polityk; po spełnieniu kryteriów zwróć $(\mu, \phi_s)$.
+\end{enumerate}
+\vspace{0.6em}
+	\textbf{Rezultat:} Jedna pętla łączy ewaluację (Alg.~1) z kontrolą (Alg.~2), zapewniając spójne estymaty $V^{\beta}$ i $V^{\alpha,\beta}$ oraz praktyczne polityki.
 \end{frame}
