@@ -155,7 +155,7 @@ Q^{\alpha, \beta}_{\mu, \phi_s}(s,a) = (1 - \alpha) r(s,a) + \alpha Q^{\beta}_{\
 \STATE $Q_{n+1}(s, a) \leftarrow Q_n(s, a) + \theta_n \left[ (1 - \alpha) r(s, a) + \alpha W_n(s, a) - Q_n(s, a) \right]$
 \ENDFOR
 \ENDFOR
-\STATE \textbf{Wynik:} $Q_n$ (QH) oraz $W_n$ (eksponencjalne); $\mu^\star(s) = \arg\max_a Q_n(s, a)$, $\phi_s^\star(s) = \arg\max_a W_n(s, a)$
+\STATE \textbf{Wynik:} $Q_n$ (QH) oraz $W_n$ (wykładnicze); $\mu^\star(s) = \arg\max_a Q_n(s, a)$, $\phi_s^\star(s) = \arg\max_a W_n(s, a)$
 \end{algorithmic}
 \end{algorithm}
 
@@ -180,7 +180,7 @@ Przedstawiamy sposób praktycznego łączenia Algorytmu~\ref{alg:policy-eval} i 
 \begin{enumerate}
 \item \textbf{Inicjalizacja:} Wybierz politykę próbkowania $\nu$ oraz zestaw par $(\mu, \phi_s)$ do oceny; zainicjalizuj $J$, $W$ i $Q$.
 \item \textbf{Ewaluacja (Alg.~\ref{alg:policy-eval}):} Uruchom dwuskalową ewaluację polityk, aż $W$ aproksymuje $V^{\beta}_{\phi_s}$, a $J$ zbliży się do $V^{\alpha,\beta}_{\mu,\phi_s}$.
-\item \textbf{Aktualizacja sterowania (Alg.~\ref{alg:qh-qlearning}):} Traktuj $W$ jako docelowe wartości eksponencjalne i wykonaj krok QH Q-learningu, aktualizując $Q$ oraz politykę pierwszego kroku $\mu$.
+\item \textbf{Aktualizacja sterowania (Alg.~\ref{alg:qh-qlearning}):} Traktuj $W$ jako docelowe wartości wykładnicze i wykonaj krok QH Q-learningu, aktualizując $Q$ oraz politykę pierwszego kroku $\mu$.
 \item \textbf{Synteza polityk:} Zaktualizuj $\phi_s(s) = \arg\max_a W(s,a)$ oraz $\mu(s) = \arg\max_a Q(s,a)$; jeśli potrzeba, powtórz kroki 2--3 dla doprecyzowania.
 \item \textbf{Zatrzymanie:} Monitoruj normy $\|W_{n+1}-W_n\|$, $\|Q_{n+1}-Q_n\|$ i stabilność polityk; po spełnieniu kryteriów zwróć $(\mu, \phi_s)$.
 \end{enumerate}
