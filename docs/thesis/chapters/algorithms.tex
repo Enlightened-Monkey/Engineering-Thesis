@@ -1,58 +1,206 @@
 \chapter{Algorytmy}
 
+\section{Wyprowadzenie wzoru dla oceny polityki}
+
+\subsection{Punkt wyjścia}
+
+Z twierdzenia o redukcji polityk (Twierdzenie~\ref{thm:policy-reduction}):
+\begin{equation}
+J^{\alpha, \beta}_{\mu, \phi_s}(s) = \sum_a \mu(a\mid s) \left[ r(s, a) + \alpha\beta \sum_{s'} q(s'\mid s, a) \, J^{\beta}_{\phi_s}(s') \right].
+\label{eq:policy-eval-start}
+\end{equation}
+Celem jest wyrażenie zależności wyłącznie przez $J^{\alpha, \beta}_{\phi_s}(s')$, bez jawnego $J^{\beta}$.
+
+\subsection{Definicje dla polityki stacjonarnej}
+
+Dyskontowanie wykładnicze:
+\begin{equation}
+J^{\beta}_{\phi_s}(s') = \mathbb{E}_{\phi_s} [r(s', \cdot)] + \beta \mathbb{E}_{\phi_s, q} [J^{\beta}_{\phi_s}(s'') \mid s'],
+\label{eq:exp-value}
+\end{equation}
+gdzie $\mathbb{E}_{\phi_s} [r(s', \cdot)] = \sum_{a'} \phi_s(a'\mid s') \, r(s', a')$.
+
+Quasi-hiperboliczne:
+\begin{equation}
+J_{\phi_s}(s') = \mathbb{E}_{\phi_s} [r(s', \cdot)] + \alpha \beta \mathbb{E}_{\phi_s, q} [J^{\beta}_{\phi_s}(s'') \mid s'].
+\label{eq:qh-value-stat}
+\end{equation}
+
+\subsection{Izolacja $\alpha \beta J^{\beta}_{\phi_s}(s')$}
+
+Pomnóżmy równanie~\eqref{eq:exp-value} przez $\alpha \beta$:
+\begin{equation}
+\alpha \beta J^{\beta}_{\phi_s}(s') = \alpha \beta \mathbb{E}_{\phi_s} [r(s', \cdot)] + \alpha \beta^2 \mathbb{E}_{\phi_s, q} [J^{\beta}_{\phi_s}(s'') \mid s'].
+\label{eq:mult-ab}
+\end{equation}
+
+Pomnóżmy równanie~\eqref{eq:qh-value-stat} przez $\beta$:
+\begin{equation}
+\beta J_{\phi_s}(s') = \beta \mathbb{E}_{\phi_s} [r(s', \cdot)] + \alpha \beta^2 \mathbb{E}_{\phi_s, q} [J^{\beta}_{\phi_s}(s'') \mid s'].
+\label{eq:mult-b}
+\end{equation}
+
+\subsection{Kluczowe odejmowanie}
+
+Odejmując równanie~\eqref{eq:mult-b} od równania~\eqref{eq:mult-ab}:
+\begin{equation}
+\alpha \beta J^{\beta}_{\phi_s}(s') - \beta J_{\phi_s}(s') = \alpha \beta \mathbb{E}_{\phi_s} [r(s', \cdot)] - \beta \mathbb{E}_{\phi_s} [r(s', \cdot)].
+\end{equation}
+Wyrażenie $\alpha \beta^2 \mathbb{E}[J^{\beta}_{\phi_s}(s'')]$ skraca się.
+
+Upraszczając:
+\begin{equation}
+\alpha \beta J^{\beta}_{\phi_s}(s') - \beta J_{\phi_s}(s') = - (1 - \alpha) \beta \sum_{a'} \phi_s(a'\mid s') r(s', a').
+\end{equation}
+
+Przekształcamy:
+\begin{equation}
+\alpha \beta J^{\beta}_{\phi_s}(s') = \beta J_{\phi_s}(s') - (1 - \alpha) \beta \mathbb{E}_{\phi_s} [r(s', \cdot)].
+\label{eq:isolated}
+\end{equation}
+
+\subsection{Podstawienie do wzoru początkowego}
+
+Podstawiając równanie~\eqref{eq:isolated} do równania~\eqref{eq:policy-eval-start}:
+\begin{align}
+J^{\alpha, \beta}_{\mu, \phi_s}(s) &= \sum_a \mu(a\mid s) \left[ r(s, a) + \sum_{s'} q(s'\mid s, a) \left( \beta J_{\phi_s}(s') - (1 - \alpha) \beta \mathbb{E}_{\phi_s} [r(s', \cdot)] \right) \right] \nonumber \\
+&= \sum_a \mu(a\mid s) \left[ r(s, a) + \sum_{s'} q(s'\mid s, a) \left[ -(1 - \alpha)\beta \sum_{a'} \phi_s(a'\mid s') r(s', a') + \beta J_{\phi_s}(s') \right] \right].
+\label{eq:final-policy-eval}
+\end{align}
+
 \section{Algorytm oceny polityki}
 
 Przedstawiamy algorytm w pełni model-free do oceny polityk w ujęciu dyskontowania quasi-hiperbolicznego.
 
 \begin{algorithm}[H]
 \caption{Model-Free Policy Evaluation for QH Discounting}
+\label{alg:policy-eval}
 \begin{algorithmic}[1]
-\STATE \textbf{Input:} Krok uczenia $(\alpha_n)$, $(\beta_n)$; współczynniki dyskontowania $\sigma$, $\gamma$; polityka próbkowania $\nu$; polityki oceniane $\mu$, $\pi$
-\STATE \textbf{Initialize:} $V_0, W_0 \in \mathbb{R}^{|S|}$
-\FOR{$n = 0, 1, 2, \ldots$}
-    \FOR{każdy stan $s \in S$}
-        \STATE Próbkuj $a \sim \nu(\cdot \mid s)$
-        \STATE Zaobserwuj nagrodę $r(s,a)$ oraz stan kolejny $s' \sim P(\cdot \mid s,a)$
-        \STATE Próbkuj $a' \sim \pi(\cdot \mid s')$
-        \STATE Zaobserwuj nagrodę $r(s',a')$
-        \STATE Oblicz cel TD:
-        \STATE \hspace{1em} $r^{\text{target}}_n(s) \gets r(s,a) - (1-\sigma)\,\gamma\,r(s',a') + \gamma\, W_n(s')$
-        \STATE Zaktualizuj $W$:
-        \STATE \hspace{1em} $W_{n+1}(s) \gets W_n(s) + \alpha_n \left[ \frac{\pi(a \mid s)}{\nu(a \mid s)}\, r^{\text{target}}_n(s) - W_n(s) \right]$
-        \STATE Zaktualizuj $V$:
-        \STATE \hspace{1em} $V_{n+1}(s) \gets V_n(s) + \beta_n \left[ \frac{\mu(a \mid s)}{\nu(a \mid s)}\, r^{\text{target}}_n(s) - V_n(s) \right]$
-    \ENDFOR
+\REQUIRE Kroki uczenia $(\eta_n)$, $(\theta_n)$; współczynniki dyskontowania $\alpha$, $\beta$; polityka próbkowania $\nu$; polityki oceniane $\mu$, $\phi_s$
+\STATE \textbf{Inicjalizacja:} $J_0, W_0 \in \mathbb{R}^{|S|}$
+\FOR{$n = 0, 1, 2, \dots$}
+\FOR{$s \in S$}
+\STATE Próbkuj $a \sim \nu(\cdot|s)$
+\STATE Zaobserwuj nagrodę $r(s, a)$ oraz stan kolejny $s' \sim q(\cdot|s, a)$
+\STATE Próbkuj $a' \sim \phi_s(\cdot|s')$
+\STATE Zaobserwuj nagrodę $r(s', a')$
+\STATE Oblicz cel TD: $r^{\text{target}}_n(s) \leftarrow r(s, a) - (1 - \alpha)\beta \, r(s', a') + \beta W_n(s')$
+\STATE Zaktualizuj $W$: $W_{n+1}(s) \leftarrow W_n(s) + \eta_n \left[ \frac{\phi_s(a|s)}{\nu(a|s)} r^{\text{target}}_n(s) - W_n(s) \right]$
+\STATE Zaktualizuj $J$: $J_{n+1}(s) \leftarrow J_n(s) + \theta_n \left[ \frac{\mu(a|s)}{\nu(a|s)} r^{\text{target}}_n(s) - J_n(s) \right]$
 \ENDFOR
-\STATE \textbf{Output:} Oszacowanie funkcji wartości $V^{\pi}$
+\ENDFOR
 \end{algorithmic}
 \end{algorithm}
+
+\subsection{Operator typu Bellmana jako kontrakcja}
+
+Definiujemy operator $T^{\phi_s}: \mathbb{R}^{|S|} \to \mathbb{R}^{|S|}$:
+\begin{equation}
+(T^{\phi_s} J)(s) = \sum_a \phi_s(a\mid s) \left[ r(s, a) + \sum_{s'} q(s'\mid s, a) \left[ -(1 - \alpha)\beta \sum_{a'} \phi_s(a'\mid s') r(s', a') + \beta J(s') \right] \right].
+\end{equation}
+
+\begin{theorem}[Kontrakcja operatora Bellmana dla QH]
+\label{thm:bellman-contraction}
+Operator $T^{\phi_s}$ jest kontrakcją w normie $\max$ z faktorem $\beta < 1$. Jedyny punkt stały $J = T^{\phi_s} J$ to $J^{\alpha, \beta}_{\phi_s}$.
+\end{theorem}
+
+\begin{proof}
+Dla dowolnych $J_1, J_2 \in \mathbb{R}^{|S|}$ mamy:
+\[
+\|T^{\phi_s} J_1 - T^{\phi_s} J_2\|_\infty \leq \beta \|J_1 - J_2\|_\infty,
+\]
+co wynika wprost z twierdzenia Banacha o odwzorowaniu zwężającym.
+\end{proof}
+
+\subsection{Konwergencja algorytmu oceny polityki}
+
+\begin{theorem}[Konwergencja Algorithm~\ref{alg:policy-eval}]
+\label{thm:policy-eval-conv}
+Jeżeli kroki uczenia $\eta_n$, $\theta_n$ spełniają warunki Robbins--Monro:
+\[
+\sum_n \eta_n = \infty, \quad \sum_n \eta_n^2 < \infty \quad \text{oraz} \quad \sum_n \theta_n = \infty, \quad \sum_n \theta_n^2 < \infty,
+\]
+oraz dodatkowo $\theta_n / \eta_n \to 0$ (dwie skale czasowe), to ciągi $(W_n, J_n)$ są zbieżne prawie na pewno do $(J^{\alpha, \beta}_{\phi_s}, J^{\alpha, \beta}_{\mu, \phi_s})$.
+\end{theorem}
 
 \section{Algorytm QH Q-Learning}
 
-Algorytm uczenia Q dla dyskontowania quasi-hiperbolicznego, który znajduje optymalną politykę bez znajomości modelu środowiska.
+\subsection{Algorytm Value Iteration (model-based)}
+
+Dostęp do modelu $q$ pozwala wyznaczyć optymalną parę w dwóch krokach:
+\begin{enumerate}
+\item Uruchom standardowy value iteration dla dyskontowania $\beta$ aż do zbieżności $V^{\beta}_\star$ i $\pi^\star_\beta$.
+\item Dla każdego $s \in S$ oblicz $\mu^\star(s) = \arg\max_{a \in A} \left[ r(s, a) + \alpha \beta \sum_{s'} q(s'\mid s, a) V^{\beta}_\star(s') \right]$.
+\end{enumerate}
+Wynik: $\phi_s^\star = \pi^\star_\beta$, a $(\mu^\star, \phi_s^\star)$ maksymalizuje $V^{\alpha, \beta}$.
+
+\subsection{Model-free QH Q-Learning}
+
+Relacja funkcji Q:
+\begin{equation}
+Q^{\alpha, \beta}_{\mu, \phi_s}(s,a) = (1 - \alpha) r(s,a) + \alpha Q^{\beta}_{\phi_s}(s,a), \qquad Q^{\alpha, \beta}_*(s,a) = (1 - \alpha) r(s,a) + \alpha Q^{\beta}_*(s,a).
+\label{eq:q-relation}
+\end{equation}
 
 \begin{algorithm}[H]
 \caption{QH Q-Learning (Model-Free)}
+\label{alg:qh-qlearning}
 \begin{algorithmic}[1]
-\STATE \textbf{Input:} Krok uczenia $(\alpha_n)$, $(\beta_n)$; współczynnik dyskontowania $\gamma$; parametr quasi-hiperboliczny $\sigma$
-\STATE \textbf{Initialize:} $W_0, Q_0 \in \mathbb{R}^{|S| \times |A|}$
+\REQUIRE Kroki uczenia $(\eta_n)$, $(\theta_n)$; współczynniki dyskontowania $\alpha$, $\beta$
+\STATE \textbf{Inicjalizacja:} $W_0, Q_0 \in \mathbb{R}^{|S| \times |A|}$
 \FOR{$n = 0, 1, 2, \ldots$}
-    \FOR{każdą parę $(s,a) \in S \times A$}
-        \STATE Próbkuj stan kolejny $s' \sim P(\cdot \mid s,a)$, zaobserwuj nagrodę $r(s,a)$
-        \STATE Zaktualizuj $W$:
-        \STATE \hspace{1em} $W_{n+1}(s,a) \gets W_n(s,a) + \alpha_n \Big[ r(s,a) + \gamma\, \max_{a'} W_n(s',a') - W_n(s,a) \Big]$
-        \STATE Zaktualizuj $Q$:
-        \STATE \hspace{1em} $Q_{n+1}(s,a) \gets Q_n(s,a) + \beta_n \Big[ (1-\sigma)\, r(s,a) + \sigma\, W_n(s,a) - Q_n(s,a) \Big]$
-    \ENDFOR
+\FOR{$(s, a) \in S \times A$}
+\STATE Próbkuj $s' \sim q(\cdot\mid s, a)$ i zaobserwuj $r(s, a)$
+\STATE $W_{n+1}(s, a) \leftarrow W_n(s, a) + \eta_n \left[ r(s, a) + \beta \max_{a'} W_n(s', a') - W_n(s, a) \right]$
+\STATE $Q_{n+1}(s, a) \leftarrow Q_n(s, a) + \theta_n \left[ (1 - \alpha) r(s, a) + \alpha W_n(s, a) - Q_n(s, a) \right]$
 \ENDFOR
-\STATE \textbf{Output:} Funkcja wartości quasi-hiperbolicznej $Q_n$, funkcja wartości wykładniczej $W_n$ oraz polityki optymalne $\mu^*(s) = \arg\max_a Q(s,a)$, $\pi^*(s) = \arg\max_a W(s,a)$
+\ENDFOR
+\STATE \textbf{Wynik:} $Q_n$ (QH) oraz $W_n$ (eksponencjalne); $\mu^\star(s) = \arg\max_a Q_n(s, a)$, $\phi_s^\star(s) = \arg\max_a W_n(s, a)$
 \end{algorithmic}
 \end{algorithm}
 
+\subsection{Konwergencja QH Q-Learning}
+
+\begin{theorem}[Konwergencja QH Q-Learning]
+\label{thm:qh-qlearning-conv}
+Załóżmy, że $(\eta_n)$ i $(\theta_n)$ spełniają warunki Robbins--Monro ($\sum_n \eta_n = \infty$, $\sum_n \eta_n^2 < \infty$ itd.) oraz $\theta_n / \eta_n \to 0$ (dwie skale czasowe). Wtedy $(Q_n, W_n)$ zbiega prawie na pewno do $(Q^{\alpha, \beta}_{\mu^\star, \phi_s^\star}, Q^{\beta}_{\phi_s^\star})$. Polityki: $\mu^\star(s) = \arg\max_a Q_n(s,a)$, $\phi_s^\star(s) = \arg\max_a W_n(s,a)$.
+\end{theorem}
+
+Szkic dowodu:
+\begin{itemize}
+\item \textbf{Szybka skala ($W_n$):} klasyczny Q-learning prowadzi do $Q^{\beta}_{\phi_s^\star}$.
+\item \textbf{Wolna skala ($Q_n$):} układ liniowy ze stanem quasi-stałym $W_n \approx Q^{\beta}_{\phi_s^\star}$ zbiega do $Q^{\alpha, \beta}_{\mu^\star, \phi_s^\star}$.
+\item Zachowanie greedy zapewnia odzyskanie optymalnych polityk.
+\end{itemize}
+
+\section{Procedura łączona: Ewaluacja i Kontrola}
+
+Przedstawiamy sposób praktycznego łączenia Algorytmu~\ref{alg:policy-eval} i Algorytmu~\ref{alg:qh-qlearning}:
+
+\begin{enumerate}
+\item \textbf{Inicjalizacja:} Wybierz politykę próbkowania $\nu$ oraz zestaw par $(\mu, \phi_s)$ do oceny; zainicjalizuj $J$, $W$ i $Q$.
+\item \textbf{Ewaluacja (Alg.~\ref{alg:policy-eval}):} Uruchom dwuskalową ewaluację polityk, aż $W$ aproksymuje $V^{\beta}_{\phi_s}$, a $J$ zbliży się do $V^{\alpha,\beta}_{\mu,\phi_s}$.
+\item \textbf{Aktualizacja sterowania (Alg.~\ref{alg:qh-qlearning}):} Traktuj $W$ jako docelowe wartości eksponencjalne i wykonaj krok QH Q-learningu, aktualizując $Q$ oraz politykę pierwszego kroku $\mu$.
+\item \textbf{Synteza polityk:} Zaktualizuj $\phi_s(s) = \arg\max_a W(s,a)$ oraz $\mu(s) = \arg\max_a Q(s,a)$; jeśli potrzeba, powtórz kroki 2--3 dla doprecyzowania.
+\item \textbf{Zatrzymanie:} Monitoruj normy $\|W_{n+1}-W_n\|$, $\|Q_{n+1}-Q_n\|$ i stabilność polityk; po spełnieniu kryteriów zwróć $(\mu, \phi_s)$.
+\end{enumerate}
+
+\textbf{Rezultat:} Jedna pętla łączy ewaluację z kontrolą, zapewniając spójne estymaty $V^{\beta}$ i $V^{\alpha,\beta}$ oraz praktyczne polityki.
+
 \section{Analiza zbieżności}
 
-Przedstawiamy dowody zbieżności dla proponowanych algorytmów, wykorzystując teorię aproksymacji stochastycznej o dwóch skalach czasowych.
+Przedstawione algorytmy wykorzystują teorię aproksymacji stochastycznej o dwóch skalach czasowych. Kluczowe założenia to:
+\begin{itemize}
+\item Warunki Robbins--Monro dla kroków uczenia
+\item Separacja skal czasowych: $\theta_n / \eta_n \to 0$
+\item Eksploracja dostateczna do odwiedzenia wszystkich par stan-akcja
+\end{itemize}
 
 \section{Złożoność obliczeniowa}
 
-Analizujemy złożoność czasową i pamięciową algorytmów w porównaniu z tradycyjnymi metodami.
+Analizujemy złożoność czasową i pamięciową algorytmów:
+\begin{itemize}
+\item \textbf{Pamięć:} $O(|S| \times |A|)$ dla tablic $W$ i $Q$
+\item \textbf{Czas na iterację:} $O(|S| \times |A|)$ dla pełnej aktualizacji
+\item Algorytmy dwuskalowe wymagają większej liczby iteracji dla zbieżności, ale oferują gwarancje konwergencji
+\end{itemize}
