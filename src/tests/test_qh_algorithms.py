@@ -1,7 +1,7 @@
 """
-Unit tests for quasi-hyperbolic discounting algorithms.
+Testy jednostkowe dla algorytmów dyskontowania quasi-hiperbolicznego.
 
-Run with: python -m pytest src/tests/
+Uruchom: python -m pytest src/tests/
 """
 
 import pytest
@@ -9,7 +9,7 @@ import numpy as np
 import sys
 from pathlib import Path
 
-# Add src to path for imports
+# Dodanie src do ścieżki dla importów
 sys.path.append(str(Path(__file__).parent.parent))
 
 from algorithms.qh_qlearning import QHQLearning
@@ -18,10 +18,10 @@ from models.mdp_environments import InventoryMDP, GridWorldMDP, PoleBalancingMDP
 from utils.analysis_tools import calculate_qh_return, validate_qh_parameters
 
 class TestQHQLearning:
-    """Test cases for QH Q-Learning algorithm."""
+    """Przypadki testowe dla algorytmu QH Q-Learning."""
     
     def test_initialization(self):
-        """Test proper initialization of QH Q-Learning."""
+        """Test poprawnej inicjalizacji QH Q-Learning."""
         agent = QHQLearning(n_states=5, n_actions=3, alpha=0.8, beta=0.95)
         
         assert agent.n_states == 5
@@ -32,30 +32,30 @@ class TestQHQLearning:
         assert agent.Q.shape == (5, 3)
         
     def test_action_selection(self):
-        """Test action selection methods."""
+        """Test metod wyboru akcji."""
         agent = QHQLearning(n_states=3, n_actions=2)
         
-        # Test deterministic action selection
+        # Test deterministycznego wyboru akcji
         agent.epsilon = 0.0
-        agent.Q[0, 1] = 1.0  # Make action 1 optimal for state 0
+        agent.Q[0, 1] = 1.0  # Uczyń akcję 1 optymalną dla stanu 0
         action = agent.get_action(0, exploration=False)
         assert action == 1
         
     def test_q_function_update(self):
-        """Test Q-function update mechanism."""
-        agent = QHQLearning(n_states=3, n_actions=2, alpha=1.0)  # Fast learning
+        """Test mechanizmu aktualizacji funkcji Q."""
+        agent = QHQLearning(n_states=3, n_actions=2, alpha=1.0)  # Szybkie uczenie
         
         initial_q = agent.Q[0, 0]
         agent.update(state=0, action=0, reward=1.0, next_state=1)
         
-        # Q-function should have changed
+        # Funkcja Q powinna się zmienić
         assert agent.Q[0, 0] != initial_q
         
     def test_policy_extraction(self):
-        """Test policy extraction from Q-functions."""
+        """Test ekstrakcji polityki z funkcji Q."""
         agent = QHQLearning(n_states=2, n_actions=3)
         
-        # Set up Q-values to make action 2 optimal for both states
+        # Ustaw wartości Q tak, aby akcja 2 była optymalna dla obu stanów
         agent.Q[0, 2] = 1.0
         agent.Q[1, 2] = 1.0
         
@@ -66,10 +66,10 @@ class TestQHQLearning:
 
 
 class TestPolicyEvaluation:
-    """Test cases for QH policy evaluation."""
+    """Przypadki testowe dla oceny polityki QH."""
     
     def test_initialization(self):
-        """Test proper initialization."""
+        """Test poprawnej inicjalizacji."""
         evaluator = QHPolicyEvaluation(n_states=4, alpha=0.7, beta=0.9)
         
         assert evaluator.n_states == 4
@@ -79,7 +79,7 @@ class TestPolicyEvaluation:
         assert len(evaluator.J) == 4
         
     def test_value_update(self):
-        """Test value function updates."""
+        """Test aktualizacji funkcji wartości."""
         evaluator = QHPolicyEvaluation(n_states=3, theta_step=1.0, eta_step=1.0)
         
         initial_j = evaluator.J[0]
@@ -94,11 +94,11 @@ class TestPolicyEvaluation:
             phi_prob=1.0,
         )
         
-        # Value function should have changed
+        # Funkcja wartości powinna się zmienić
         assert evaluator.J[0] != initial_j
 
     def test_evaluate_policy_loop(self):
-        """Ensure the full Algorithm 1 driver runs without errors."""
+        """Upewnienie się, że pełny driver Algorytmu 1 działa bez błędów."""
 
         evaluator = QHPolicyEvaluation(n_states=2, alpha=0.5, beta=0.9)
 
@@ -128,14 +128,14 @@ class TestPolicyEvaluation:
 
 
 class TestMDPEnvironments:
-    """Test cases for MDP environments."""
+    """Przypadki testowe dla środowisk MDP."""
     
     def test_inventory_mdp(self):
-        """Test inventory MDP environment."""
+        """Test środowiska MDP zarządzania zapasami."""
         env = InventoryMDP(max_inventory=10, max_order=5)
         
-        assert env.n_states == 11  # 0 to 10
-        assert env.n_actions == 6   # 0 to 5
+        assert env.n_states == 11  # 0 do 10
+        assert env.n_actions == 6   # 0 do 5
         
         # Test reset
         initial_state = env.reset()
@@ -149,20 +149,20 @@ class TestMDPEnvironments:
         assert isinstance(info, dict)
         
     def test_gridworld_mdp(self):
-        """Test GridWorld MDP environment."""
+        """Test środowiska GridWorld MDP."""
         env = GridWorldMDP(width=4, height=3)
         
         assert env.n_states == 12  # 4 × 3
-        assert env.n_actions == 4  # up, down, left, right
+        assert env.n_actions == 4  # góra, dół, lewo, prawo
         
-        # Test state/position conversion
+        # Test konwersji stan/pozycja
         assert env._pos_to_state(0, 0) == 0
         assert env._pos_to_state(3, 2) == 11
         assert env._state_to_pos(0) == (0, 0)
         assert env._state_to_pos(11) == (3, 2)
 
     def test_pole_balancing_mdp(self):
-        """Test pole balancing MDP environment dynamics and discretization."""
+        """Test dynamiki i dyskretyzacji środowiska balansowania kija."""
         env = PoleBalancingMDP()
 
         expected_states = (
@@ -189,38 +189,38 @@ class TestMDPEnvironments:
 
 
 class TestAnalysisTools:
-    """Test cases for analysis utilities."""
+    """Przypadki testowe dla narzędzi analizy."""
     
     def test_qh_return_calculation(self):
-        """Test QH return calculation."""
+        """Test obliczania zwrotu QH."""
         rewards = [1.0, 2.0, 3.0]
-        sigma = 0.8
-        gamma = 0.9
+        alpha = 0.8
+        beta = 0.9
         
-        qh_return = calculate_qh_return(rewards, sigma, gamma)
+        qh_return = calculate_qh_return(rewards, alpha, beta)
         
-        # Manual calculation: 1.0 + 0.8 * (0.9 * 2.0 + 0.9^2 * 3.0)
+        # Ręczne obliczenie: 1.0 + 0.8 * (0.9 * 2.0 + 0.9^2 * 3.0)
         expected = 1.0 + 0.8 * (0.9 * 2.0 + 0.81 * 3.0)
         assert abs(qh_return - expected) < 1e-10
         
     def test_parameter_validation(self):
-        """Test parameter validation."""
+        """Test walidacji parametrów."""
         assert validate_qh_parameters(0.8, 0.95) == True
-        assert validate_qh_parameters(1.2, 0.95) == False  # sigma > 1
-        assert validate_qh_parameters(0.8, 1.1) == False   # gamma >= 1
-        assert validate_qh_parameters(-0.1, 0.95) == False # sigma < 0
+        assert validate_qh_parameters(1.2, 0.95) == False  # alpha > 1
+        assert validate_qh_parameters(0.8, 1.1) == False   # beta >= 1
+        assert validate_qh_parameters(-0.1, 0.95) == False # alpha < 0
         
     def test_empty_rewards_qh_return(self):
-        """Test QH return calculation with empty rewards."""
+        """Test obliczania zwrotu QH z pustą listą nagród."""
         qh_return = calculate_qh_return([], 0.8, 0.9)
         assert qh_return == 0.0
 
 
 class TestIntegration:
-    """Integration tests combining multiple components."""
+    """Testy integracyjne łączące wiele komponentów."""
     
     def test_agent_environment_interaction(self):
-        """Test agent training in environment."""
+        """Test trenowania agenta w środowisku."""
         env = GridWorldMDP(width=3, height=3)
         agent = QHQLearning(
             n_states=env.n_states,
@@ -230,7 +230,7 @@ class TestIntegration:
             epsilon=0.1
         )
         
-        # Run a few training steps
+        # Wykonanie kilku kroków treningowych
         state = env.reset()
         for _ in range(10):
             action = agent.get_action(state)
@@ -242,18 +242,18 @@ class TestIntegration:
             else:
                 state = next_state
         
-        # Agent should have learned something (Q-values changed)
+        # Agent powinien się czegoś nauczyć (wartości Q się zmieniły)
         assert np.any(agent.Q != 0)
         
-    def test_sigma_parameter_effects(self):
-        """Test that different sigma values produce different behaviors."""
+    def test_alpha_parameter_effects(self):
+        """Test, czy różne wartości alpha dają różne zachowania."""
         env = GridWorldMDP(width=3, height=3)
         
-        # Create agents with different sigma values
-        agent1 = QHQLearning(env.n_states, env.n_actions, alpha=1.0)  # No bias
-        agent2 = QHQLearning(env.n_states, env.n_actions, alpha=0.5)  # Strong bias
+        # Tworzenie agentów z różnymi wartościami alpha
+        agent1 = QHQLearning(env.n_states, env.n_actions, alpha=1.0)  # Brak uprzedzenia
+        agent2 = QHQLearning(env.n_states, env.n_actions, alpha=0.5)  # Silne uprzedzenie
         
-        # Train both agents briefly
+        # Krótkie trenowanie obu agentów
         for agent in [agent1, agent2]:
             state = env.reset()
             for _ in range(50):
@@ -262,9 +262,9 @@ class TestIntegration:
                 agent.update(state, action, reward, next_state)
                 state = next_state if not done else env.reset()
         
-        # Agents should develop different policies (at least potentially)
-        # This is a weak test since we can't guarantee different policies
-        # with such short training, but it checks the mechanism works
+        # Agenci powinni rozwinąć różne polityki (przynajmniej potencjalnie)
+        # To jest słaby test, ponieważ nie możemy zagwarantować różnych polityk
+        # przy tak krótkim trenowaniu, ale sprawdza czy mechanizm działa
         policy1 = agent1.get_policy()
         policy2 = agent2.get_policy()
         

@@ -1,8 +1,8 @@
 """
-Utility functions for quasi-hyperbolic discounting algorithms.
+Funkcje pomocnicze dla algorytmów dyskontowania quasi-hiperbolicznego.
 
-This module contains helper functions for data processing, visualization,
-and mathematical computations related to QH discounting.
+Moduł zawiera funkcje pomocnicze do przetwarzania danych, wizualizacji
+i obliczeń matematycznych związanych z dyskontowaniem QH.
 """
 
 import numpy as np
@@ -12,55 +12,55 @@ from typing import Dict, List, Tuple, Optional, Union
 import pandas as pd
 
 def calculate_qh_return(rewards: List[float], 
-                       sigma: float, 
-                       gamma: float,
+                       alpha: float, 
+                       beta: float,
                        t0: int = 0) -> float:
     """
-    Calculate quasi-hyperbolic discounted return from a sequence of rewards.
+    Obliczenie zdyskontowanego zwrotu quasi-hiperbolicznego z sekwencji nagród.
     
     Args:
-        rewards: List of rewards
-        sigma: Present-bias parameter
-        gamma: Exponential discount factor
-        t0: Starting time index
+        rewards: Lista nagród
+        alpha: Parametr uprzedzenia teraźniejszości
+        beta: Współczynnik dyskontowania wykładniczego
+        t0: Początkowy indeks czasowy
         
     Returns:
-        QH discounted return
+        Zdyskontowany zwrot QH
     """
     if len(rewards) == 0:
         return 0.0
     
-    # Immediate reward (no discounting)
+    # Natychmiastowa nagroda (bez dyskontowania)
     qh_return = rewards[0]
     
-    # Future rewards (with QH discounting)
+    # Przyszłe nagrody (z dyskontowaniem QH)
     for t, reward in enumerate(rewards[1:], start=1):
-        qh_return += sigma * (gamma ** t) * reward
+        qh_return += alpha * (beta ** t) * reward
     
     return qh_return
 
 def compare_discounting_schemes(rewards: List[float], 
-                               sigma: float, 
-                               gamma: float) -> Dict[str, float]:
+                               alpha: float, 
+                               beta: float) -> Dict[str, float]:
     """
-    Compare different discounting schemes on the same reward sequence.
+    Porównanie różnych schematów dyskontowania na tej samej sekwencji nagród.
     
     Args:
-        rewards: Sequence of rewards
-        sigma: Present-bias parameter
-        gamma: Discount factor
+        rewards: Sekwencja nagród
+        alpha: Parametr uprzedzenia teraźniejszości
+        beta: Współczynnik dyskontowania
         
     Returns:
-        Dictionary with returns under different schemes
+        Słownik ze zwrotami dla różnych schematów
     """
-    # Exponential discounting
-    exp_return = sum(reward * (gamma ** t) for t, reward in enumerate(rewards))
+    # Dyskontowanie wykładnicze
+    exp_return = sum(reward * (beta ** t) for t, reward in enumerate(rewards))
     
-    # Quasi-hyperbolic discounting
-    qh_return = calculate_qh_return(rewards, sigma, gamma)
+    # Dyskontowanie quasi-hiperboliczne
+    qh_return = calculate_qh_return(rewards, alpha, beta)
     
-    # Hyperbolic discounting (for comparison)
-    hyp_return = sum(reward / (1 + gamma * t) for t, reward in enumerate(rewards))
+    # Dyskontowanie hiperboliczne (dla porównania)
+    hyp_return = sum(reward / (1 + beta * t) for t, reward in enumerate(rewards))
     
     return {
         'exponential': exp_return,
@@ -71,14 +71,14 @@ def compare_discounting_schemes(rewards: List[float],
 def analyze_time_inconsistency(policy_sequence: List[np.ndarray],
                               state: int) -> Dict:
     """
-    Analyze time inconsistency in a sequence of policies.
+    Analiza niespójności czasowej w sekwencji polityk.
     
     Args:
-        policy_sequence: List of policy arrays over time
-        state: State to analyze
+        policy_sequence: Lista tablic polityk w czasie
+        state: Stan do analizy
         
     Returns:
-        Time inconsistency metrics
+        Metryki niespójności czasowej
     """
     if len(policy_sequence) < 2:
         return {'inconsistency_rate': 0.0, 'changes': []}
@@ -101,36 +101,36 @@ def analyze_time_inconsistency(policy_sequence: List[np.ndarray],
 def compute_policy_similarity(policy1: np.ndarray, 
                              policy2: np.ndarray) -> float:
     """
-    Compute similarity between two policies.
+    Obliczenie podobieństwa między dwiema politykami.
     
     Args:
-        policy1: First policy
-        policy2: Second policy
+        policy1: Pierwsza polityka
+        policy2: Druga polityka
         
     Returns:
-        Similarity score (0 = completely different, 1 = identical)
+        Współczynnik podobieństwa (0 = zupełnie różne, 1 = identyczne)
     """
     if len(policy1) != len(policy2):
-        raise ValueError("Policies must have same length")
+        raise ValueError("Polityki muszą mieć tę samą długość")
     
     return np.mean(policy1 == policy2)
 
 def visualize_value_function(value_function: np.ndarray,
-                           title: str = "Value Function",
+                           title: str = "Funkcja wartości",
                            save_path: Optional[str] = None) -> None:
     """
-    Visualize value function as a bar chart.
+    Wizualizacja funkcji wartości jako wykres słupkowy.
     
     Args:
-        value_function: Array of state values
-        title: Plot title
-        save_path: Path to save the plot (optional)
+        value_function: Tablica wartości stanów
+        title: Tytuł wykresu
+        save_path: Ścieżka do zapisu wykresu (opcjonalna)
     """
     plt.figure(figsize=(10, 6))
     states = range(len(value_function))
     plt.bar(states, value_function, alpha=0.7)
-    plt.xlabel('State')
-    plt.ylabel('Value')
+    plt.xlabel('Stan')
+    plt.ylabel('Wartość')
     plt.title(title)
     plt.grid(True, alpha=0.3)
     
@@ -140,20 +140,20 @@ def visualize_value_function(value_function: np.ndarray,
 
 def visualize_policy(policy: np.ndarray,
                     n_actions: int,
-                    title: str = "Policy",
+                    title: str = "Polityka",
                     save_path: Optional[str] = None) -> None:
     """
-    Visualize policy as a heatmap or bar chart.
+    Wizualizacja polityki jako mapa cieplna lub wykres słupkowy.
     
     Args:
-        policy: Policy array (state -> action)
-        n_actions: Number of possible actions
-        title: Plot title
-        save_path: Path to save the plot (optional)
+        policy: Tablica polityki (stan -> akcja)
+        n_actions: Liczba możliwych akcji
+        title: Tytuł wykresu
+        save_path: Ścieżka do zapisu wykresu (opcjonalna)
     """
     plt.figure(figsize=(12, 4))
     
-    # Create policy matrix for visualization
+    # Tworzenie macierzy polityki do wizualizacji
     n_states = len(policy)
     policy_matrix = np.zeros((n_actions, n_states))
     
@@ -164,10 +164,10 @@ def visualize_policy(policy: np.ndarray,
                 xticklabels=range(n_states),
                 yticklabels=range(n_actions),
                 cmap='Blues',
-                cbar_kws={'label': 'Selected'})
+                cbar_kws={'label': 'Wybrana'})
     
-    plt.xlabel('State')
-    plt.ylabel('Action')
+    plt.xlabel('Stan')
+    plt.ylabel('Akcja')
     plt.title(title)
     
     if save_path:
@@ -175,27 +175,27 @@ def visualize_policy(policy: np.ndarray,
     plt.show()
 
 def compare_learning_curves(results_dict: Dict[str, List[float]],
-                           title: str = "Learning Curves",
+                           title: str = "Krzywe uczenia",
                            save_path: Optional[str] = None) -> None:
     """
-    Compare learning curves from multiple algorithms.
+    Porównanie krzywych uczenia z wielu algorytmów.
     
     Args:
-        results_dict: Dictionary mapping algorithm names to reward lists
-        title: Plot title
-        save_path: Path to save the plot (optional)
+        results_dict: Słownik mapujący nazwy algorytmów na listy nagród
+        title: Tytuł wykresu
+        save_path: Ścieżka do zapisu wykresu (opcjonalna)
     """
     plt.figure(figsize=(12, 8))
     
     for name, rewards in results_dict.items():
-        # Smooth the curve using moving average
+        # Wygładzenie krzywej średnią ruchomą
         window_size = max(10, len(rewards) // 100)
         smoothed_rewards = pd.Series(rewards).rolling(window=window_size).mean()
         
         plt.plot(smoothed_rewards, label=name, linewidth=2)
     
-    plt.xlabel('Episodes')
-    plt.ylabel('Average Reward')
+    plt.xlabel('Epizody')
+    plt.ylabel('Średnia nagroda')
     plt.title(title)
     plt.legend()
     plt.grid(True, alpha=0.3)
@@ -206,20 +206,20 @@ def compare_learning_curves(results_dict: Dict[str, List[float]],
 
 def create_experiment_summary(results: Dict) -> pd.DataFrame:
     """
-    Create a summary DataFrame from experiment results.
+    Tworzenie podsumowania DataFrame z wyników eksperymentu.
     
     Args:
-        results: Experiment results dictionary
+        results: Słownik wyników eksperymentu
         
     Returns:
-        Summary DataFrame
+        Podsumowanie DataFrame
     """
     summary_data = []
     
     if 'performance_metrics' in results:
         for metric in results['performance_metrics']:
             summary_data.append({
-                'sigma': metric['sigma'],
+                'alpha': metric['alpha'],
                 'mean_performance': metric['mean_performance'],
                 'std_performance': metric['std_performance'],
                 'n_runs': len(metric['runs'])
@@ -231,26 +231,26 @@ def statistical_significance_test(group1: List[float],
                                 group2: List[float],
                                 test_type: str = 'ttest') -> Dict:
     """
-    Perform statistical significance test between two groups.
+    Przeprowadzenie testu istotności statystycznej między dwoma grupami.
     
     Args:
-        group1: First group of values
-        group2: Second group of values
-        test_type: Type of test ('ttest' or 'mannwhitney')
+        group1: Pierwsza grupa wartości
+        group2: Druga grupa wartości
+        test_type: Typ testu ('ttest' lub 'mannwhitney')
         
     Returns:
-        Test results
+        Wyniki testu
     """
     from scipy import stats
     
     if test_type == 'ttest':
         statistic, p_value = stats.ttest_ind(group1, group2)
-        test_name = "Student's t-test"
+        test_name = "Test t-Studenta"
     elif test_type == 'mannwhitney':
         statistic, p_value = stats.mannwhitneyu(group1, group2, alternative='two-sided')
-        test_name = "Mann-Whitney U test"
+        test_name = "Test Manna-Whitneya U"
     else:
-        raise ValueError(f"Unknown test type: {test_type}")
+        raise ValueError(f"Nieznany typ testu: {test_type}")
     
     return {
         'test_name': test_name,
@@ -265,16 +265,16 @@ def statistical_significance_test(group1: List[float],
 def export_results_to_latex(results_df: pd.DataFrame, 
                            filename: str = "results_table.tex") -> None:
     """
-    Export results DataFrame to LaTeX table format.
+    Eksport wyników DataFrame do formatu tabeli LaTeX.
     
     Args:
-        results_df: Results DataFrame
-        filename: Output filename
+        results_df: DataFrame z wynikami
+        filename: Nazwa pliku wyjściowego
     """
     latex_table = results_df.to_latex(
         index=False,
         float_format="%.3f",
-        caption="Experimental Results Summary",
+        caption="Podsumowanie wyników eksperymentalnych",
         label="tab:results",
         position="h!"
     )
@@ -282,25 +282,25 @@ def export_results_to_latex(results_df: pd.DataFrame,
     with open(filename, 'w') as f:
         f.write(latex_table)
     
-    print(f"LaTeX table saved to {filename}")
+    print(f"Tabela LaTeX zapisana do {filename}")
 
-def validate_qh_parameters(sigma: float, gamma: float) -> bool:
+def validate_qh_parameters(alpha: float, beta: float) -> bool:
     """
-    Validate QH discounting parameters.
+    Walidacja parametrów dyskontowania QH.
     
     Args:
-        sigma: Present-bias parameter
-        gamma: Exponential discount factor
+        alpha: Parametr uprzedzenia teraźniejszości
+        beta: Współczynnik dyskontowania wykładniczego
         
     Returns:
-        True if parameters are valid
+        True jeśli parametry są prawidłowe
     """
-    if not (0 <= sigma <= 1):
-        print(f"Warning: sigma = {sigma} is outside valid range [0, 1]")
+    if not (0 <= alpha <= 1):
+        print(f"Ostrzeżenie: alpha = {alpha} jest poza prawidłowym zakresem [0, 1]")
         return False
     
-    if not (0 <= gamma < 1):
-        print(f"Warning: gamma = {gamma} is outside valid range [0, 1)")
+    if not (0 <= beta < 1):
+        print(f"Ostrzeżenie: beta = {beta} jest poza prawidłowym zakresem [0, 1)")
         return False
     
     return True
