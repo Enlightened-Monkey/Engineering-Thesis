@@ -165,6 +165,26 @@ Optional flags mirror the notation used in the thesis:
 
 The script saves the figure automatically and reports its location on completion.
 
+### 9. Apple Choice Thought Experiment
+
+**File:** `apple_choice_experiment.py`
+
+Replicates the classic behavioural question “one apple today or two tomorrow?”
+and contrasts it with the “one in 50 days vs two in 51 days” variant. The script
+prints discounted values and the resulting decisions for both exponential and
+quasi-hyperbolic agents, making the time-inconsistency induced by present bias
+explicit.
+
+**Usage:**
+```bash
+python -m src.experiments.apple_choice_experiment --sigma 0.45 --gamma 0.95
+```
+
+Adjust `--sigma` to control the strength of present bias (lower values make the
+agent more impatient). The output summarises which option each discounting
+scheme prefers in both scenarios and whether the sequence of choices is
+time-consistent.
+
 ## Jupyter Notebooks
 
 For interactive exploration, see:
