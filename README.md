@@ -1,154 +1,155 @@
-# Engineering Thesis Repository
+# Repozytorium Pracy Inżynierskiej
 
 ## Algorytmy oparte o wzmocnione nauczanie maszynowe w dyskontowanych modelach markowskich
 
-**Title (English):** Algorithms based on reinforcement learning in discounted Markovian models
+**Tytuł (angielski):** Reinforcement learning algorithms in discounted Markov decision processes
 
-**Author:** [Author Name]  
-**Institution:** [Institution Name]  
-**Year:** 2024
+**Autor:** Michał Wrona  
+**Opiekun:** prof. dr hab. inż. Anna Jaśkiewicz  
+**Instytucja:** Politechnika Wrocławska, Wydział Matematyki  
+**Rok:** 2024
 
-### Abstract
+### Streszczenie
 
-This repository contains the complete implementation and documentation for an engineering thesis on reinforcement learning algorithms with quasi-hyperbolic discounting in Markov Decision Processes (MDPs). The research focuses on time-inconsistent decision makers (precommitted agents) and includes a practical application to inventory management models.
+Repozytorium zawiera kompletną implementację i dokumentację pracy inżynierskiej dotyczącej algorytmów uczenia ze wzmocnieniem z dyskontowaniem quasi-hiperbolicznym w Markowskich Procesach Decyzyjnych (MDP). Badania koncentrują się na niespójnych czasowo decydentach (precommitted agents) i obejmują praktyczne zastosowanie do modeli gromadzenia zapasów.
 
-**Keywords:** Reinforcement Learning, Quasi-Hyperbolic Discounting, Markov Decision Processes, Time Inconsistency, Policy Evaluation, Inventory Control
+**Słowa kluczowe:** Uczenie ze wzmocnieniem, Dyskontowanie quasi-hiperboliczne, Markowskie procesy decyzyjne, Niespójność czasowa, Ocena polityki, Zarządzanie zapasami
 
-**AMS Classification:** 90C39, 90C40, 90B05, 93E03, 93E35
+**Klasyfikacja AMS:** 90C39, 90C40, 90B05, 93E03, 93E35
 
 ---
 
-## Repository Structure
+## Struktura repozytorium
 
 ```
-├── docs/                          # Documentation and thesis
-│   ├── thesis/                    # Main thesis document
-│   │   ├── chapters/              # Thesis chapters (LaTeX)
-│   │   ├── figures/               # Thesis figures
-│   │   ├── bibliography/          # BibTeX references
-│   │   └── main.tex               # Main LaTeX document
-│   ├── literature/                # Literature reviews and summaries
-│   └── presentation/              # Defense presentation materials
-├── src/                           # Source code
-│   ├── algorithms/                # Core QH algorithms
-│   │   ├── qh_qlearning.py       # QH Q-Learning implementation
-│   │   └── qh_policy_evaluation.py # Policy evaluation algorithm
-│   ├── models/                    # MDP environment models
-│   │   └── mdp_environments.py    # Inventory and GridWorld MDPs
-│   ├── experiments/               # Experimental framework
-│   │   ├── experiment_runner.py   # Main experiment runner
-│   │   └── comparison_standard_vs_qh.py # Standard vs QH comparison
-│   ├── utils/                     # Utility functions
-│   │   └── analysis_tools.py      # Analysis and visualization tools
-│   └── tests/                     # Unit tests
-├── notebooks/                     # Jupyter notebooks
-│   └── standard_vs_qh_comparison.ipynb # Interactive comparison analysis
-├── data/                          # Data directory
-│   ├── datasets/                  # Input datasets
-│   ├── results/                   # Experimental results
-│   └── plots/                     # Generated figures
-├── references/                    # Reference materials
-│   ├── papers/                    # Research papers (PDFs)
-│   └── books/                     # Books and monographs
-└── README.md                      # This file
+├── docs/                          # Dokumentacja i praca dyplomowa
+│   ├── thesis/                    # Główny dokument pracy
+│   │   ├── chapters/              # Rozdziały pracy (LaTeX)
+│   │   ├── figures/               # Rysunki
+│   │   ├── bibliography/          # Bibliografia BibTeX
+│   │   └── main.tex               # Główny dokument LaTeX
+│   ├── literature/                # Przeglądy i podsumowania literatury
+│   └── presentation/              # Materiały do obrony
+├── src/                           # Kod źródłowy
+│   ├── algorithms/                # Podstawowe algorytmy QH
+│   │   ├── qh_qlearning.py       # Implementacja QH Q-Learning
+│   │   └── qh_policy_evaluation.py # Algorytm oceny polityki
+│   ├── models/                    # Modele środowisk MDP
+│   │   └── mdp_environments.py    # MDP zapasów i GridWorld
+│   ├── experiments/               # Framework eksperymentalny
+│   │   ├── experiment_runner.py   # Główny runner eksperymentów
+│   │   └── comparison_standard_vs_qh.py # Porównanie Standard vs QH
+│   ├── utils/                     # Funkcje pomocnicze
+│   │   └── analysis_tools.py      # Narzędzia analizy i wizualizacji
+│   └── tests/                     # Testy jednostkowe
+├── notebooks/                     # Notatniki Jupyter
+│   └── standard_vs_qh_comparison.ipynb # Interaktywna analiza porównawcza
+├── data/                          # Katalog danych
+│   ├── datasets/                  # Zestawy danych wejściowych
+│   ├── results/                   # Wyniki eksperymentów
+│   └── plots/                     # Wygenerowane wykresy
+├── references/                    # Materiały referencyjne
+│   ├── papers/                    # Artykuły naukowe (PDF)
+│   └── books/                     # Książki i monografie
+└── README.md                      # Ten plik
 ```
 
-## Research Overview
+## Przegląd badań
 
-### Problem Statement
+### Sformułowanie problemu
 
-Traditional reinforcement learning assumes exponential discounting and time-consistent preferences. However, real-world decision-making often involves:
+Tradycyjne uczenie ze wzmocnieniem zakłada dyskontowanie wykładnicze i spójne czasowo preferencje. Jednak rzeczywiste podejmowanie decyzji często obejmuje:
 
-- **Time inconsistency**: Preferences between future rewards change over time
-- **Present bias**: Overweighting immediate rewards relative to future ones
-- **Bounded rationality**: Systematic deviations from perfectly rational behavior
+- **Niespójność czasowa**: Preferencje między przyszłymi nagrodami zmieniają się w czasie
+- **Uprzedzenie teraźniejszości**: Przeważanie nagród natychmiastowych nad przyszłymi
+- **Ograniczona racjonalność**: Systematyczne odchylenia od idealnie racjonalnego zachowania
 
-This thesis investigates **quasi-hyperbolic (QH) discounting** as an alternative to exponential discounting, providing more realistic models of decision-making behavior.
+Praca bada **dyskontowanie quasi-hiperboliczne (QH)** jako alternatywę dla dyskontowania wykładniczego, dostarczając bardziej realistyczne modele zachowań decyzyjnych.
 
-### Key Contributions
+### Główne wkłady
 
-1. **Theoretical Framework**: Extension of MDP theory to quasi-hyperbolic discounting
-2. **Algorithm Development**: 
-   - Model-free policy evaluation using two-timescale stochastic approximation
-   - QH Q-Learning algorithm with convergence guarantees
-3. **Practical Application**: Inventory management model demonstrating time-inconsistent optimal policies
-4. **Empirical Validation**: Comprehensive experimental evaluation and comparison with traditional methods
+1. **Ramy teoretyczne**: Rozszerzenie teorii MDP o dyskontowanie quasi-hiperboliczne
+2. **Rozwój algorytmów**: 
+   - Bezmodelowa ocena polityki z wykorzystaniem aproksymacji stochastycznej dwuskalowej
+   - Algorytm QH Q-Learning z gwarancjami zbieżności
+3. **Zastosowanie praktyczne**: Model gromadzenia zapasów demonstrujący niespójne czasowo optymalne polityki
+4. **Walidacja empiryczna**: Kompleksowa ewaluacja eksperymentalna i porównanie z tradycyjnymi metodami
 
-### Quasi-Hyperbolic Discounting Model
+### Model dyskontowania quasi-hiperbolicznego
 
-The cumulative discounted return follows:
+Skumulowany zdyskontowany zwrot ma postać:
 ```
-G = r₀ + σ∑(γᵗrₜ) for t=1 to ∞
+G = r₀ + α∑(β^t r_t) dla t=1 do ∞
 ```
 
-Where:
-- `σ ∈ [0,1]`: Present-bias parameter
-- `γ ∈ [0,1)`: Standard exponential discount factor
-- `r₀`: Immediate reward
-- `rₜ`: Reward at time t
+Gdzie:
+- `α ∈ [0,1]`: Parametr uprzedzenia teraźniejszości
+- `β ∈ [0,1)`: Standardowy wykładniczy współczynnik dyskontowania
+- `r₀`: Natychmiastowa nagroda
+- `r_t`: Nagroda w czasie t
 
-When `σ = 1`, this reduces to standard exponential discounting. When `σ < 1`, the agent exhibits present bias.
+Gdy `α = 1`, redukuje się to do standardowego dyskontowania wykładniczego. Gdy `α < 1`, agent wykazuje uprzedzenie teraźniejszości.
 
-## Getting Started
+## Rozpoczęcie pracy
 
-### Prerequisites
+### Wymagania wstępne
 
 ```bash
-# Python 3.8+ required
+# Wymagany Python 3.8+
 python -m pip install numpy scipy matplotlib pandas seaborn
 ```
 
-### Running Experiments
+### Uruchamianie eksperymentów
 
-#### Quick Start: Standard vs QH Comparison
+#### Szybki start: Porównanie Standard vs QH
 
 ```bash
-# Run the comparison script
+# Uruchom skrypt porównawczy
 cd src/experiments
 python comparison_standard_vs_qh.py
 ```
 
-Or use the interactive Jupyter notebook:
+Lub użyj interaktywnego notatnika Jupyter:
 ```bash
 jupyter notebook notebooks/standard_vs_qh_comparison.ipynb
 ```
 
-#### Programmatic Usage
+#### Użycie programistyczne
 
 ```python
 from src.experiments.comparison_standard_vs_qh import MDPComparison
 from src.models.mdp_environments import InventoryMDP
 
-# Create environment
+# Tworzenie środowiska
 env = InventoryMDP(max_inventory=15, max_order=8)
 
-# Initialize comparison
+# Inicjalizacja porównania
 comparison = MDPComparison(
     env=env,
-    sigma=0.7,   # Present-bias parameter
-    gamma=0.95,  # Discount factor
-    alpha=0.1,   # Learning rate
-    epsilon=0.1  # Exploration rate
+    alpha=0.7,   # Parametr uprzedzenia teraźniejszości
+    beta=0.95,   # Współczynnik dyskontowania
+    theta_step=0.1,   # Krok uczenia
+    epsilon=0.1  # Współczynnik eksploracji
 )
 
-# Train both standard and QH algorithms
+# Trenowanie obu algorytmów
 comparison.train(n_episodes=5000, record_interval=100)
 
-# Generate report
+# Generowanie raportu
 print(comparison.generate_report())
 
-# Analyze policies and values
+# Analiza polityk i wartości
 policy_comp = comparison.compare_policies()
 value_comp = comparison.compare_values()
 
-# Check time-consistency
+# Sprawdzenie spójności czasowej
 consistency = comparison.analyze_time_consistency(initial_state=5, horizon=10)
 
-# Visualize results
+# Wizualizacja wyników
 comparison.plot_comparison(save_path='results.png')
 ```
 
-### Building the Thesis
+### Budowanie pracy dyplomowej
 
 ```bash
 cd docs/thesis/
@@ -158,128 +159,128 @@ pdflatex main.tex
 pdflatex main.tex
 ```
 
-### Managing Large Files with Git LFS
+### Zarządzanie dużymi plikami z Git LFS
 
-The repository relies on [Git Large File Storage](https://git-lfs.com/) for binaries like thesis PDFs and reference materials.
+Repozytorium wykorzystuje [Git Large File Storage](https://git-lfs.com/) dla plików binarnych jak PDF-y pracy i materiały referencyjne.
 
-- Install Git LFS once per machine:
+- Zainstaluj Git LFS raz na maszynie:
   ```bash
   git lfs install
   ```
-- Track new binary patterns before committing them (examples):
+- Śledź nowe wzorce binarne przed ich commitowaniem (przykłady):
   ```bash
   git lfs track "*.pdf"
   git lfs track "*.npz"
   git lfs track "data/results/*.json"
   ```
-  This updates `.gitattributes`; commit the change so teammates get the same rules.
-- Add, commit, and push as usual:
+  To aktualizuje `.gitattributes`; commituj zmianę aby współpracownicy mieli te same reguły.
+- Dodawaj, commituj i pushuj jak zwykle:
   ```bash
   git add path/to/artifact
-  git commit -m "Add new experiment artifacts"
+  git commit -m "Dodaj nowe artefakty eksperymentów"
   git push origin main
   ```
-- If you need to force-upload all LFS objects (for example on CI):
+- Jeśli musisz wymusić upload wszystkich obiektów LFS (np. na CI):
   ```bash
   git lfs push --all origin main
   ```
 
-## Research Background
+## Kontekst badawczy
 
-### Literature
+### Literatura
 
-The research builds upon key works:
+Badania opierają się na kluczowych pracach:
 
-- **Bertsekas (2019)**: "Reinforcement learning and optimal control" - Theoretical foundations
-- **Jaśkiewicz & Nowak (2021)**: "Markov decision processes with quasi-hyperbolic discounting" - Core theoretical framework  
-- **Eshwar et al. (2024)**: "Reinforcement learning with quasi-hyperbolic discounting" - Algorithmic innovations
+- **Bertsekas (2019)**: "Reinforcement learning and optimal control" - Podstawy teoretyczne
+- **Jaśkiewicz & Nowak (2021)**: "Markov decision processes with quasi-hyperbolic discounting" - Podstawowe ramy teoretyczne  
+- **Eshwar et al. (2024)**: "Reinforcement learning with quasi-hyperbolic discounting" - Innowacje algorytmiczne
 
-### Applications
+### Zastosowania
 
-The thesis demonstrates practical applications in:
-- **Inventory Management**: Optimal ordering policies under time-inconsistent preferences
-- **Behavioral Economics**: Modeling bounded rationality in sequential decision-making
-- **Financial Planning**: Long-term investment strategies with present bias
+Praca demonstruje praktyczne zastosowania w:
+- **Zarządzanie zapasami**: Optymalne polityki zamawiania przy niespójnych czasowo preferencjach
+- **Ekonomia behawioralna**: Modelowanie ograniczonej racjonalności w sekwencyjnym podejmowaniu decyzji
+- **Planowanie finansowe**: Długoterminowe strategie inwestycyjne z uprzedzeniem teraźniejszości
 
-## Key Results
+## Główne wyniki
 
-### Theoretical Results
+### Wyniki teoretyczne
 
-1. **Policy Structure**: Optimal policies for precommitted agents have a specific two-component structure
-2. **Convergence**: Model-free algorithms converge to optimal policies under standard conditions
-3. **Time Inconsistency**: QH discounting leads to time-inconsistent optimal policies
+1. **Struktura polityki**: Optymalne polityki dla zobowiązanych agentów mają specyficzną strukturę dwuskładnikową
+2. **Zbieżność**: Bezmodelowe algorytmy zbiegają do optymalnych polityk w standardowych warunkach
+3. **Niespójność czasowa**: Dyskontowanie QH prowadzi do niespójnych czasowo optymalnych polityk
 
-### Experimental Findings
+### Wyniki eksperymentalne
 
-- QH algorithms successfully learn optimal policies in various environments
-- Present-bias parameter significantly affects optimal behavior
-- Traditional exponential discounting is a special case (σ = 1)
+- Algorytmy QH skutecznie uczą się optymalnych polityk w różnych środowiskach
+- Parametr uprzedzenia teraźniejszości znacząco wpływa na optymalne zachowanie
+- Tradycyjne dyskontowanie wykładnicze jest przypadkiem szczególnym (α = 1)
 
-### Comparison: Standard vs Quasi-Hyperbolic Discounting
+### Porównanie: Standardowe vs Quasi-Hiperboliczne Dyskontowanie
 
-The framework provides comprehensive comparison between:
+Framework zapewnia kompleksowe porównanie między:
 
-**Standard Q-Learning** (Exponential Discounting):
-- Value function: $V(s) = E[\sum_{t=0}^{\infty} \gamma^t r_t]$
-- Time-consistent preferences
-- Optimal from long-term perspective
+**Standardowy Q-Learning** (Dyskontowanie wykładnicze):
+- Funkcja wartości: $V(s) = E[\sum_{t=0}^{\infty} \beta^t r_t]$
+- Spójne czasowo preferencje
+- Optymalny z perspektywy długoterminowej
 
-**QH Q-Learning** (Quasi-Hyperbolic Discounting):
-- Value function: $V(s) = E[r_0 + \sigma \sum_{t=1}^{\infty} \gamma^t r_t]$
-- Present-bias when σ < 1
-- Potentially time-inconsistent
-- Better models human behavior
+**QH Q-Learning** (Dyskontowanie quasi-hiperboliczne):
+- Funkcja wartości: $V(s) = E[r_0 + \alpha \sum_{t=1}^{\infty} \beta^t r_t]$
+- Uprzedzenie teraźniejszości gdy α < 1
+- Potencjalnie niespójny czasowo
+- Lepiej modeluje ludzkie zachowania
 
-**Key Observations:**
-- Policy agreement decreases as σ decreases (stronger present-bias)
-- QH discounting leads to more myopic (short-term focused) decisions
-- Value function differences are significant in states requiring long-term planning
-- Time-inconsistency manifests when precommitted and myopic choices differ
+**Kluczowe obserwacje:**
+- Zgodność polityk maleje gdy α maleje (silniejsze uprzedzenie teraźniejszości)
+- Dyskontowanie QH prowadzi do bardziej krótkowzrocznych decyzji
+- Różnice w funkcjach wartości są znaczące w stanach wymagających długoterminowego planowania
+- Niespójność czasowa przejawia się gdy wybory zobowiązane i krótkowzroczne się różnią
 
-## Available Documents
+## Dostępne dokumenty
 
-- **[Literature Summary](./docs/literature/1285_MS_Summary.md)** - Comprehensive summary (in English and Polish) of the research paper "Teaching Precommitted Agents: Model-Free Policy Evaluation and Control in Quasi-Hyperbolic Discounted MDPs" by S.R. Eshwar
-- **[Reference Paper](./references/papers/1285_MS.pdf)** - Original research paper on quasi-hyperbolic discounting in reinforcement learning
+- **[Podsumowanie literatury](./docs/literature/1285_MS_Summary.md)** - Kompleksowe podsumowanie (po angielsku i polsku) artykułu badawczego "Teaching Precommitted Agents: Model-Free Policy Evaluation and Control in Quasi-Hyperbolic Discounted MDPs" autorstwa S.R. Eshwar
+- **[Artykuł referencyjny](./references/papers/1285_MS.pdf)** - Oryginalny artykuł badawczy o dyskontowaniu quasi-hiperbolicznym w uczeniu ze wzmocnieniem
 
-## Future Work
+## Przyszłe prace
 
-- Extension to partially observable MDPs (POMDPs)
-- Multi-agent systems with time-inconsistent preferences
-- Continuous state/action spaces
-- Empirical validation with human subjects
-- Real-world applications in robotics and finance
+- Rozszerzenie na częściowo obserwowalne MDP (POMDP)
+- Systemy wieloagentowe z niespójnymi czasowo preferencjami
+- Ciągłe przestrzenie stanów/akcji
+- Walidacja empiryczna z udziałem ludzi
+- Zastosowania w robotyce i finansach
 
-## Contributing
+## Współpraca
 
-This repository supports academic research. For questions or collaborations:
+Repozytorium wspiera badania naukowe. W przypadku pytań lub współpracy:
 
-1. Check the documentation in `docs/`
-2. Review existing experiments in `src/experiments/`
-3. Run unit tests: `python -m pytest src/tests/`
+1. Sprawdź dokumentację w `docs/`
+2. Przejrzyj istniejące eksperymenty w `src/experiments/`
+3. Uruchom testy jednostkowe: `python -m pytest src/tests/`
 
-## License
+## Licencja
 
-Academic use only. Please cite this work if you use any part of the code or methodology.
+Tylko do użytku akademickiego. Proszę cytować tę pracę przy wykorzystaniu jakiejkolwiek części kodu lub metodologii.
 
-## Citation
+## Cytowanie
 
 ```bibtex
-@mastersthesis{author2024qh,
+@mastersthesis{wrona2024qh,
   title={Algorytmy oparte o wzmocnione nauczanie maszynowe w dyskontowanych modelach markowskich},
-  author={[Author Name]},
-  school={[Institution Name]},
+  author={Michał Wrona},
+  school={Politechnika Wrocławska, Wydział Matematyki},
   year={2024},
-  type={Engineering Thesis},
-  keywords={Reinforcement Learning, Quasi-Hyperbolic Discounting, Markov Decision Processes}
+  type={Praca inżynierska},
+  keywords={Uczenie ze wzmocnieniem, Dyskontowanie quasi-hiperboliczne, Markowskie procesy decyzyjne}
 }
 ```
 
-## Contact
+## Kontakt
 
-**Author:** [Author Name]  
-**Email:** [author@institution.edu]  
-**Institution:** [Institution Name]
+**Autor:** Michał Wrona  
+**Opiekun:** prof. dr hab. inż. Anna Jaśkiewicz  
+**Instytucja:** Politechnika Wrocławska, Wydział Matematyki
 
 ---
 
-*This repository contains all materials for the engineering thesis on quasi-hyperbolic discounting in reinforcement learning, including theoretical analysis, algorithmic implementations, and experimental validation.*
+*Repozytorium zawiera wszystkie materiały do pracy inżynierskiej o dyskontowaniu quasi-hiperbolicznym w uczeniu ze wzmocnieniem, włącznie z analizą teoretyczną, implementacjami algorytmów i walidacją eksperymentalną.*

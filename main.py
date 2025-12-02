@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Main script for running quasi-hyperbolic discounting experiments.
+Główny skrypt do uruchamiania eksperymentów z dyskontowaniem quasi-hiperbolicznym.
 
-Usage:
-    python main.py --experiment inventory --sigma 0.8 --runs 5
+Użycie:
+    python main.py --experiment inventory --alpha 0.8 --runs 5
     python main.py --experiment convergence --env gridworld
     python main.py --experiment comparison
 """
@@ -12,95 +12,95 @@ import argparse
 import sys
 from pathlib import Path
 
-# Add src to path
+# Dodanie src do ścieżki
 sys.path.append(str(Path(__file__).parent / 'src'))
 
 from experiments.experiment_runner import ExperimentRunner
 from models.mdp_environments import InventoryMDP, GridWorldMDP
 
 def main():
-    parser = argparse.ArgumentParser(description='Run QH discounting experiments')
+    parser = argparse.ArgumentParser(description='Uruchom eksperymenty dyskontowania QH')
     parser.add_argument('--experiment', type=str, required=True,
                        choices=['inventory', 'convergence', 'comparison'],
-                       help='Type of experiment to run')
-    parser.add_argument('--sigma', type=float, default=0.8,
-                       help='Present-bias parameter (default: 0.8)')
-    parser.add_argument('--gamma', type=float, default=0.95,
-                       help='Discount factor (default: 0.95)')
+                       help='Typ eksperymentu do uruchomienia')
+    parser.add_argument('--alpha', type=float, default=0.8,
+                       help='Parametr uprzedzenia teraźniejszości (domyślnie: 0.8)')
+    parser.add_argument('--beta', type=float, default=0.95,
+                       help='Współczynnik dyskontowania (domyślnie: 0.95)')
     parser.add_argument('--runs', type=int, default=5,
-                       help='Number of experiment runs (default: 5)')
+                       help='Liczba uruchomień eksperymentu (domyślnie: 5)')
     parser.add_argument('--episodes', type=int, default=1000,
-                       help='Episodes per run (default: 1000)')
+                       help='Epizody na uruchomienie (domyślnie: 1000)')
     parser.add_argument('--env', type=str, default='inventory',
                        choices=['inventory', 'gridworld'],
-                       help='Environment type (default: inventory)')
+                       help='Typ środowiska (domyślnie: inventory)')
     parser.add_argument('--output', type=str, default='data/results',
-                       help='Output directory (default: data/results)')
+                       help='Katalog wyjściowy (domyślnie: data/results)')
     
     args = parser.parse_args()
     
-    print(f"Running {args.experiment} experiment with σ={args.sigma}, γ={args.gamma}")
-    print(f"Environment: {args.env}, Runs: {args.runs}, Episodes: {args.episodes}")
+    print(f"Uruchamianie eksperymentu {args.experiment} z α={args.alpha}, β={args.beta}")
+    print(f"Środowisko: {args.env}, Uruchomienia: {args.runs}, Epizody: {args.episodes}")
     print("-" * 60)
     
-    # Create experiment runner
+    # Tworzenie runnera eksperymentów
     runner = ExperimentRunner(results_dir=args.output)
     
     if args.experiment == 'inventory':
-        # Run inventory management experiment
-        sigma_values = [0.5, 0.7, 0.8, 0.9, 1.0]
+        # Uruchomienie eksperymentu zarządzania zapasami
+        alpha_values = [0.5, 0.7, 0.8, 0.9, 1.0]
         results = runner.run_inventory_experiment(
-            sigma_values=sigma_values,
+            alpha_values=alpha_values,
             n_runs=args.runs,
             n_episodes=args.episodes
         )
         
-        # Save results
+        # Zapisanie wyników
         runner.save_results(results, 'inventory_experiment')
         
-        # Generate plots
-        runner.generate_plots(results, 'performance_vs_sigma')
+        # Generowanie wykresów
+        runner.generate_plots(results, 'performance_vs_alpha')
         
     elif args.experiment == 'convergence':
-        # Run convergence analysis
+        # Uruchomienie analizy zbieżności
         results = runner.run_convergence_analysis(
             env_type=args.env,
-            sigma=args.sigma
+            alpha=args.alpha
         )
         
-        # Save results
+        # Zapisanie wyników
         runner.save_results(results, f'convergence_{args.env}')
         
-        # Generate plots
+        # Generowanie wykresów
         runner.generate_plots(results, 'convergence')
         
     elif args.experiment == 'comparison':
-        # Run traditional vs QH comparison
+        # Uruchomienie porównania tradycyjny vs QH
         results = runner.compare_traditional_vs_qh(
             env_type=args.env,
             n_runs=args.runs
         )
         
-        # Save results
+        # Zapisanie wyników
         runner.save_results(results, f'comparison_{args.env}')
         
-        # Print summary
+        # Wyświetlenie podsumowania
         comparison = results['comparison']
-        print("\nComparison Results:")
-        print(f"Traditional (σ=1.0): {comparison['traditional_mean']:.3f} ± {comparison['traditional_std']:.3f}")
-        print(f"QH (σ=0.7): {comparison['qh_mean']:.3f} ± {comparison['qh_std']:.3f}")
+        print("\nWyniki porównania:")
+        print(f"Tradycyjny (α=1.0): {comparison['traditional_mean']:.3f} ± {comparison['traditional_std']:.3f}")
+        print(f"QH (α=0.7): {comparison['qh_mean']:.3f} ± {comparison['qh_std']:.3f}")
         
-        # Statistical significance test
+        # Test istotności statystycznej
         from src.utils.analysis_tools import statistical_significance_test
         traditional_perfs = [r['final_performance'] for r in results['traditional']]
         qh_perfs = [r['final_performance'] for r in results['qh']]
         
         test_result = statistical_significance_test(traditional_perfs, qh_perfs)
-        print(f"\nStatistical test: {test_result['test_name']}")
-        print(f"p-value: {test_result['p_value']:.6f}")
-        print(f"Significant: {test_result['significant']}")
+        print(f"\nTest statystyczny: {test_result['test_name']}")
+        print(f"p-wartość: {test_result['p_value']:.6f}")
+        print(f"Istotny: {test_result['significant']}")
     
-    print(f"\nExperiment completed. Results saved to {args.output}/")
+    print(f"\nEksperyment zakończony. Wyniki zapisane do {args.output}/")
 
 if __name__ == '__main__':
     main()

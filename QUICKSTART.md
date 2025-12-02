@@ -1,123 +1,123 @@
-# Quick Start Guide: Standard vs QH Discounting Comparison
+# Przewodnik szybkiego startu: Porównanie Standardowego vs QH Dyskontowania
 
-## 5-Minute Quick Start
+## 5-minutowy szybki start
 
-### Option 1: Run the Demo
+### Opcja 1: Uruchom demo
 ```bash
 cd src/experiments
 python demo_comparison.py --demo basic
 ```
 
-### Option 2: Use Jupyter Notebook
+### Opcja 2: Użyj notatnika Jupyter
 ```bash
 jupyter notebook notebooks/standard_vs_qh_comparison.ipynb
 ```
 
-### Option 3: Python Script
+### Opcja 3: Skrypt Python
 ```python
 from src.experiments.comparison_standard_vs_qh import MDPComparison
 from src.models.mdp_environments import InventoryMDP
 
-# Create and run comparison
+# Tworzenie i uruchamianie porównania
 env = InventoryMDP(max_inventory=10, max_order=5)
-comparison = MDPComparison(env=env, sigma=0.7, gamma=0.95)
+comparison = MDPComparison(env=env, alpha=0.7, beta=0.95)
 comparison.train(n_episodes=2000)
 print(comparison.generate_report())
 ```
 
-## What to Expect
+## Czego się spodziewać
 
-### Standard Q-Learning
-- Uses exponential discounting: V(s) = E[Σ γ^t r_t]
-- Time-consistent preferences
-- Optimal for long-term planning
+### Standardowy Q-Learning
+- Używa dyskontowania wykładniczego: V(s) = E[Σ β^t r_t]
+- Spójne czasowo preferencje
+- Optymalny dla długoterminowego planowania
 
 ### QH Q-Learning  
-- Uses quasi-hyperbolic discounting: V(s) = E[r_0 + σ Σ γ^t r_t]
-- Present-bias when σ < 1
-- May be time-inconsistent
-- Better models human behavior
+- Używa dyskontowania quasi-hiperbolicznego: V(s) = E[r_0 + α Σ β^t r_t]
+- Uprzedzenie teraźniejszości gdy α < 1
+- Może być niespójny czasowo
+- Lepiej modeluje ludzkie zachowania
 
-## Key Parameters
+## Kluczowe parametry
 
-- **σ (sigma)**: Present-bias parameter
-  - σ = 1.0: No present-bias (same as standard)
-  - σ = 0.7: Moderate present-bias
-  - σ = 0.5: Strong present-bias
+- **α (alpha)**: Parametr uprzedzenia teraźniejszości
+  - α = 1.0: Brak uprzedzenia teraźniejszości (tak samo jak standardowy)
+  - α = 0.7: Umiarkowane uprzedzenie teraźniejszości
+  - α = 0.5: Silne uprzedzenie teraźniejszości
   
-- **γ (gamma)**: Discount factor (typically 0.95)
+- **β (beta)**: Współczynnik dyskontowania (typowo 0.95)
 
-- **n_episodes**: Training episodes (2000-5000 recommended)
+- **n_episodes**: Epizody treningowe (zalecane 2000-5000)
 
-## Understanding the Output
+## Zrozumienie wyjścia
 
-### Policy Agreement
-- **100%**: Policies are identical
-- **80-99%**: Minor differences
-- **<80%**: Significant divergence
+### Zgodność polityk
+- **100%**: Polityki są identyczne
+- **80-99%**: Niewielkie różnice
+- **<80%**: Znaczące rozbieżności
 
-### Value Differences
-- Shows how differently the approaches value each state
-- Larger differences indicate stronger impact of present-bias
+### Różnice wartości
+- Pokazuje jak różnie oba podejścia wyceniają każdy stan
+- Większe różnice wskazują na silniejszy wpływ uprzedzenia teraźniejszości
 
-### Time-Consistency
-- **Consistent**: Agent doesn't want to deviate from plan
-- **Inconsistent**: Agent would prefer different actions later
-- Common when σ < 1
+### Spójność czasowa
+- **Spójny**: Agent nie chce odstępować od planu
+- **Niespójny**: Agent wolałby później inne akcje
+- Częste gdy α < 1
 
-## Example Output
+## Przykładowe wyjście
 
 ```
 ======================================================================
-COMPARISON: Standard vs Quasi-Hyperbolic Discounting
+PORÓWNANIE: Standardowe vs Quasi-Hiperboliczne Dyskontowanie
 ======================================================================
 
-Environment: InventoryMDP
-States: 11, Actions: 6
-Gamma (discount): 0.95
-Sigma (present-bias): 0.7
-Episodes trained: 2000
+Środowisko: InventoryMDP
+Stany: 11, Akcje: 6
+Beta (dyskontowanie): 0.95
+Alpha (uprzedzenie teraźniejszości): 0.7
+Przeszkolone epizody: 2000
 
-POLICY COMPARISON
+PORÓWNANIE POLITYK
 ----------------------------------------------------------------------
-Agreement: 72.7%
-Different states: 3
-States where policies differ: [3 5 8]
+Zgodność: 72.7%
+Różne stany: 3
+Stany gdzie polityki się różnią: [3 5 8]
 
-VALUE FUNCTION COMPARISON
+PORÓWNANIE FUNKCJI WARTOŚCI
 ----------------------------------------------------------------------
-Mean absolute difference: 1.2345
-Max absolute difference: 3.4567
+Średnia różnica bezwzględna: 1.2345
+Maksymalna różnica bezwzględna: 3.4567
 
-PERFORMANCE COMPARISON
+PORÓWNANIE WYDAJNOŚCI
 ----------------------------------------------------------------------
-Final episode reward (Standard): 45.23
-Final episode reward (QH): 43.67
-Difference: 1.56
+Nagroda końcowego epizodu (Standardowy): 45.23
+Nagroda końcowego epizodu (QH): 43.67
+Różnica: 1.56
 
 ======================================================================
 ```
 
-## Next Steps
+## Następne kroki
 
-1. **Experiment with different σ values**: See how present-bias affects behavior
-2. **Try different environments**: Test on various MDP structures  
-3. **Analyze time-consistency**: Study when policies become inconsistent
-4. **Read full documentation**: See `docs/COMPARISON_GUIDE.md`
+1. **Eksperymentuj z różnymi wartościami α**: Zobacz jak uprzedzenie teraźniejszości wpływa na zachowanie
+2. **Wypróbuj różne środowiska**: Testuj na różnych strukturach MDP  
+3. **Analizuj spójność czasową**: Badaj kiedy polityki stają się niespójne
+4. **Przeczytaj pełną dokumentację**: Zobacz `docs/COMPARISON_GUIDE.md`
 
-## Troubleshooting
+## Rozwiązywanie problemów
 
-**Issue:** Import errors
-**Solution:** Make sure you're in the correct directory and have installed dependencies
+**Problem:** Błędy importu
+**Rozwiązanie:** Upewnij się, że jesteś w odpowiednim katalogu i masz zainstalowane zależności
 
-**Issue:** No convergence
-**Solution:** Try more episodes or adjust learning rate (alpha)
+**Problem:** Brak zbieżności
+**Rozwiązanie:** Spróbuj więcej epizodów lub dostosuj krok uczenia (theta_step)
 
-**Issue:** All policies identical
-**Solution:** Try lower σ value (stronger present-bias)
+**Problem:** Wszystkie polityki identyczne
+**Rozwiązanie:** Spróbuj niższej wartości α (silniejsze uprzedzenie teraźniejszości)
 
-## Getting Help
+## Uzyskiwanie pomocy
 
-- Full documentation: `docs/COMPARISON_GUIDE.md`
-- Example notebook: `notebooks/standard_vs_qh_comparison.ipynb`
-- Test script: `src/experiments/test_comparison.py`
+- Pełna dokumentacja: `docs/COMPARISON_GUIDE.md`
+- Przykładowy notatnik: `notebooks/standard_vs_qh_comparison.ipynb`
+- Skrypt testowy: `src/experiments/test_comparison.py`

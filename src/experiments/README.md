@@ -1,111 +1,111 @@
-# Experiments Module
+# Moduł eksperymentów
 
-This module contains experimental frameworks for comparing and analyzing reinforcement learning algorithms with different discounting schemes.
+Moduł zawiera frameworki eksperymentalne do porównywania i analizowania algorytmów uczenia ze wzmocnieniem z różnymi schematami dyskontowania.
 
-## Available Experiments
+## Dostępne eksperymenty
 
-### 1. Standard vs Quasi-Hyperbolic Comparison
+### 1. Porównanie Standardowego vs Quasi-Hiperbolicznego
 
-**File:** `comparison_standard_vs_qh.py`
+**Plik:** `comparison_standard_vs_qh.py`
 
-Complete framework for comparing standard exponential discounting with quasi-hyperbolic discounting.
+Kompletny framework do porównywania standardowego dyskontowania wykładniczego z dyskontowaniem quasi-hiperbolicznym.
 
-**Features:**
-- Parallel training of both algorithms
-- Policy and value function comparison
-- Time-consistency analysis
-- Comprehensive visualization
-- Automated report generation
+**Funkcjonalności:**
+- Równoległe trenowanie obu algorytmów
+- Porównanie polityk i funkcji wartości
+- Analiza spójności czasowej
+- Kompleksowa wizualizacja
+- Automatyczne generowanie raportów
 
-**Quick Start:**
+**Szybki start:**
 ```bash
 python comparison_standard_vs_qh.py
 ```
 
-### 2. Quick Test
+### 2. Szybki test
 
-**File:** `test_comparison.py`
+**Plik:** `test_comparison.py`
 
-Fast verification test to ensure the comparison framework works correctly.
+Szybki test weryfikacyjny sprawdzający poprawność działania frameworku porównawczego.
 
-**Usage:**
+**Użycie:**
 ```bash
 python test_comparison.py
 ```
 
-### 3. Demo Scripts
+### 3. Skrypty demo
 
-**File:** `demo_comparison.py`
+**Plik:** `demo_comparison.py`
 
-Interactive demonstrations showing key differences between discounting approaches.
+Interaktywne demonstracje pokazujące kluczowe różnice między podejściami dyskontowania.
 
-**Available Demos:**
+**Dostępne demo:**
 ```bash
-# Basic comparison
+# Podstawowe porównanie
 python demo_comparison.py --demo basic
 
-# Sensitivity analysis for σ parameter
-python demo_comparison.py --demo sigma
+# Analiza wrażliwości na parametr α
+python demo_comparison.py --demo alpha
 
-# Create visualizations
+# Tworzenie wizualizacji
 python demo_comparison.py --demo viz
 
-# Run all demos
+# Uruchom wszystkie demo
 python demo_comparison.py --demo all
 ```
 
-### 4. Discounting Comparison Plots
+### 4. Wykresy porównania dyskontowania
 
-**File:** `plot_discounting_comparison.py`
+**Plik:** `plot_discounting_comparison.py`
 
-Generate side-by-side visualisations that contrast standard exponential discounting with quasi-hyperbolic preferences for multiple σ values. The plots highlight how present-bias increases the weight of early rewards.
+Generowanie wizualizacji porównujących standardowe dyskontowanie wykładnicze z preferencjami quasi-hiperbolicznymi dla wielu wartości α. Wykresy pokazują jak uprzedzenie teraźniejszości zwiększa wagę wcześniejszych nagród.
 
-**Usage:**
+**Użycie:**
 ```bash
 python -m src.experiments.plot_discounting_comparison --no-show --output data/plots/discounting_comparison.png
 ```
 
-**Key flags:**
+**Główne flagi:**
 
-- `--sigma-values` – comma-separated σ values to compare (default `0.6,0.8,0.95`)
-- `--gamma` – common exponential discount factor γ (default `0.95`)
-- `--horizon` – number of time steps displayed (default `30`)
-- `--no-show` – skip opening a GUI window (useful on remote servers)
+- `--alpha-values` – rozdzielone przecinkami wartości α do porównania (domyślnie `0.6,0.8,0.95`)
+- `--beta` – wspólny wykładniczy współczynnik dyskontowania β (domyślnie `0.95`)
+- `--horizon` – liczba wyświetlanych kroków czasowych (domyślnie `30`)
+- `--no-show` – pomiń otwieranie okna GUI (przydatne na zdalnych serwerach)
 
-The script saves the figure if `--output` is provided; directories are created automatically.
+Skrypt zapisuje wykres jeśli podano `--output`; katalogi są tworzone automatycznie.
 
-### 5. Pole Balancing Training
+### 5. Trenowanie balansowania kija
 
-**File:** `pole_balancing_training.py`
+**Plik:** `pole_balancing_training.py`
 
-Train a quasi-hyperbolic Q-learning agent on the physics-based pole balancing environment described in the thesis.
+Trenowanie agenta quasi-hiperbolicznego Q-learning na fizycznym środowisku balansowania kija opisanym w pracy.
 
-**Usage (recommended):**
+**Użycie (zalecane):**
 ```bash
 python -m src.experiments.pole_balancing_training --episodes 100000 --eval-episodes 25 --seed 123
 ```
 
-The script now saves a compressed agent snapshot (`.npz`) alongside a JSON summary (both timestamped). Key parameters:
+Skrypt zapisuje skompresowany snapshot agenta (`.npz`) wraz z podsumowaniem JSON (oba ze znacznikiem czasu). Główne parametry:
 
-**Key flags:**
+**Główne flagi:**
 
-- `--sigma` – present-bias parameter σ (default 0.7)
-- `--gamma` – exponential discount γ (default 0.97)
-- `--alpha` – learning rate
-- `--epsilon` / `--min-epsilon` / `--epsilon-decay` – exploration schedule
-- `--seed` – seed for reproducibility
-- `--results-dir` – directory for JSON summaries (default `data/results`)
-- `--model-dir` – directory for agent weight snapshots (default `data/models`)
-- `--no-save` – skip JSON summary storage
-- `--no-save-model` – skip saving the trained agent snapshot
+- `--alpha` – parametr uprzedzenia teraźniejszości α (domyślnie 0.7)
+- `--beta` – wykładniczy współczynnik dyskontowania β (domyślnie 0.97)
+- `--theta-step` – krok uczenia
+- `--epsilon` / `--min-epsilon` / `--epsilon-decay` – harmonogram eksploracji
+- `--seed` – ziarno dla powtarzalności
+- `--results-dir` – katalog dla podsumowań JSON (domyślnie `data/results`)
+- `--model-dir` – katalog dla snapshotów wag agenta (domyślnie `data/models`)
+- `--no-save` – pomiń zapisywanie podsumowania JSON
+- `--no-save-model` – pomiń zapisywanie snapshotu wytrenowanego agenta
 
-JSON logs contain per-episode rewards (sizeable for 100k runs); adjust `--episodes` if disk space is a concern.
+Logi JSON zawierają nagrody na epizod (duże dla 100k uruchomień); dostosuj `--episodes` jeśli miejsce na dysku jest ograniczone.
 
-### 6. Pole Balancing Simulation (GIF)
+### 6. Symulacja balansowania kija (GIF)
 
-**File:** `pole_balancing_simulation.py`
+**Plik:** `pole_balancing_simulation.py`
 
-Load a trained agent snapshot and produce a Matplotlib GIF (defaults to a ~10s clip at environment fidelity):
+Wczytanie wytrenowanego snapshotu agenta i wyprodukowanie GIF-a Matplotlib (domyślnie ~10s klip z dokładnością środowiska):
 
 ```bash
 python -m src.experiments.pole_balancing_simulation \
@@ -114,141 +114,141 @@ python -m src.experiments.pole_balancing_simulation \
     --duration 10
 ```
 
-Additional options:
+Dodatkowe opcje:
 
-- `--fps` – override frame rate (defaults to environment step frequency)
-- `--seed` – reproducible reset for the rollout
-- `--env-json` – optional path to a training summary JSON if metadata is unavailable
-- `--title` – customise the animation title
+- `--fps` – nadpisanie częstotliwości klatek (domyślnie częstotliwość kroku środowiska)
+- `--seed` – powtarzalny reset dla rollout-u
+- `--env-json` – opcjonalna ścieżka do JSON-a podsumowania treningu jeśli metadane są niedostępne
+- `--title` – dostosowanie tytułu animacji
 
-### 7. Inventory Control Benchmark
+### 7. Benchmark zarządzania zapasami
 
-**File:** `inventory_control_experiment.py`
+**Plik:** `inventory_control_experiment.py`
 
-Train a quasi-hyperbolic Q-learning agent on the finite-horizon inventory control problem described in the thesis (capacity ``M = 2`` with demand probabilities ``0.2, 0.3, 0.5``).
+Trenowanie agenta quasi-hiperbolicznego Q-learning na problemie zarządzania zapasami ze skończonym horyzontem opisanym w pracy (pojemność ``M = 2`` z prawdopodobieństwami popytu ``0.2, 0.3, 0.5``).
 
-**Usage:**
+**Użycie:**
 ```bash
 python -m src.experiments.inventory_control_experiment --episodes 5000 --episode-length 30
 ```
 
-**Key flags:**
+**Główne flagi:**
 
-- `--sigma` / `--gamma` – quasi-hyperbolic discount parameters (defaults ``0.3`` and ``0.9``).
-- `--max-inventory`, `--procurement-cost`, `--holding-cost`, `--selling-price` – environment economics.
-- `--demand-support`, `--demand-prob` – demand distribution (comma-separated lists).
-- `--results-dir` – directory for JSON summaries (default `data/results`).
-- `--no-save` – skip persisting the summary to disk.
+- `--alpha` / `--beta` – parametry dyskontowania quasi-hiperbolicznego (domyślnie ``0.3`` i ``0.9``).
+- `--max-inventory`, `--procurement-cost`, `--holding-cost`, `--selling-price` – ekonomia środowiska.
+- `--demand-support`, `--demand-prob` – rozkład popytu (listy rozdzielone przecinkami).
+- `--results-dir` – katalog dla podsumowań JSON (domyślnie `data/results`).
+- `--no-save` – pomiń zapisywanie podsumowania na dysk.
 
-The script reports average reward, order quantity, sales and ending inventory over an evaluation rollout.
+Skrypt raportuje średnią nagrodę, ilość zamówień, sprzedaż i końcowy poziom zapasów w ewaluacyjnym rollout-cie.
 
-### 8. Inventory Policy Evaluation Convergence
+### 8. Zbieżność oceny polityki zapasów
 
-**File:** `policy_evaluation_convergence.py`
+**Plik:** `policy_evaluation_convergence.py`
 
-Recreates the convergence study from the thesis (Figure 1) for the inventory-control benchmark, comparing three policy pairs under the quasi-hyperbolic policy-evaluation algorithm.
+Odtworzenie badania zbieżności z pracy (Rysunek 1) dla benchmarku zarządzania zapasami, porównując trzy pary polityk w algorytmie oceny polityki quasi-hiperbolicznej.
 
-**Usage:**
+**Użycie:**
 ```bash
 python -m src.experiments.policy_evaluation_convergence --iterations 200000 --eta 0.3 --theta 0.03
 ```
 
-**Outputs:**
+**Wyjścia:**
 
-- ``data/plots/policy_evaluation_inventory_convergence.png`` – single-axis figure plotting $\lVert W_k - V^\beta_{\phi_s} \rVert_2$ on a logarithmic iteration scale for the three policy pairs $\big(\mu^*, \phi_s^*\big)$, $\big(\mu^*, \phi_s^u\big)$, and $\big(\mu^u, \phi_s^*\big)$.
+- ``data/plots/policy_evaluation_inventory_convergence.png`` – wykres jednoosowy przedstawiający $\lVert W_k - V^\beta_{\phi_s} \rVert_2$ na logarytmicznej skali iteracji dla trzech par polityk $\big(\mu^*, \phi_s^*\big)$, $\big(\mu^*, \phi_s^u\big)$, oraz $\big(\mu^u, \phi_s^*\big)$.
 
-Optional flags mirror the notation used in the thesis:
-- `--sigma` / `--beta` – quasi-hyperbolic parameters ($\sigma = 0.3$, $\beta = 0.9$ by default),
-- `--eta` / `--theta` – step-sizes for the fast and slow timescales,
-- `--iterations` – total number of updates (200k recommended for smooth curves),
-- `--seed` – RNG seed for reproducibility.
+Opcjonalne flagi odpowiadają notacji używanej w pracy:
+- `--alpha` / `--beta` – parametry quasi-hiperboliczne ($\alpha = 0.3$, $\beta = 0.9$ domyślnie),
+- `--eta` / `--theta` – rozmiary kroków dla szybkiej i wolnej skali czasowej,
+- `--iterations` – całkowita liczba aktualizacji (zalecane 200k dla gładkich krzywych),
+- `--seed` – ziarno RNG dla powtarzalności.
 
-The script saves the figure automatically and reports its location on completion.
+Skrypt automatycznie zapisuje wykres i raportuje jego lokalizację po zakończeniu.
 
-### 9. Apple Choice Thought Experiment
+### 9. Eksperyment myślowy wyboru jabłka
 
-**File:** `apple_choice_experiment.py`
+**Plik:** `apple_choice_experiment.py`
 
-Replicates the classic behavioural question “one apple today or two tomorrow?”
-and contrasts it with the “one in 50 days vs two in 51 days” variant. The script
-prints discounted values and the resulting decisions for both exponential and
-quasi-hyperbolic agents, making the time-inconsistency induced by present bias
-explicit.
+Replikacja klasycznego pytania behawioralnego "jedno jabłko dziś czy dwa jutro?"
+i porównanie z wariantem "jedno za 50 dni vs dwa za 51 dni". Skrypt
+wypisuje zdyskontowane wartości i wynikające decyzje dla agentów wykładniczych i
+quasi-hiperbolicznych, czyniąc niespójność czasową indukowaną przez uprzedzenie teraźniejszości
+jawną.
 
-**Usage:**
+**Użycie:**
 ```bash
-python -m src.experiments.apple_choice_experiment --sigma 0.45 --gamma 0.95
+python -m src.experiments.apple_choice_experiment --alpha 0.45 --beta 0.95
 ```
 
-Adjust `--sigma` to control the strength of present bias (lower values make the
-agent more impatient). The output summarises which option each discounting
-scheme prefers in both scenarios and whether the sequence of choices is
-time-consistent.
+Dostosuj `--alpha` aby kontrolować siłę uprzedzenia teraźniejszości (niższe wartości czynią
+agenta bardziej niecierpliwym). Wyjście podsumowuje którą opcję preferuje każdy schemat
+dyskontowania w obu scenariuszach i czy sekwencja wyborów jest
+spójna czasowo.
 
-## Jupyter Notebooks
+## Notatniki Jupyter
 
-For interactive exploration, see:
+Dla interaktywnej eksploracji, zobacz:
 - `../notebooks/standard_vs_qh_comparison.ipynb`
 
-## Documentation
+## Dokumentacja
 
-For detailed documentation, see:
+Dla szczegółowej dokumentacji, zobacz:
 - `../docs/COMPARISON_GUIDE.md`
-- Pole balancing environment details are available via inline docstrings in `models.mdp_environments.PoleBalancingMDP`.
+- Szczegóły środowiska balansowania kija są dostępne przez docstringi w `models.mdp_environments.PoleBalancingMDP`.
 
-## Example Usage
+## Przykład użycia
 
 ```python
 from comparison_standard_vs_qh import MDPComparison
 from models.mdp_environments import InventoryMDP, PoleBalancingMDP
 
-# Create environment
+# Tworzenie środowiska
 env = InventoryMDP(max_inventory=15, max_order=8)
-# For pole balancing instead, use:
+# Dla balansowania kija zamiast tego użyj:
 # env = PoleBalancingMDP()
 
-# Setup comparison
+# Konfiguracja porównania
 comparison = MDPComparison(
     env=env,
-    sigma=0.7,   # Present-bias parameter
-    gamma=0.95,  # Discount factor
-    alpha=0.1,   # Learning rate
-    epsilon=0.1  # Exploration rate
+    alpha=0.7,   # Parametr uprzedzenia teraźniejszości
+    beta=0.95,   # Współczynnik dyskontowania
+    theta_step=0.1,   # Krok uczenia
+    epsilon=0.1  # Współczynnik eksploracji
 )
 
-# Train both algorithms
+# Trenowanie obu algorytmów
 comparison.train(n_episodes=5000, record_interval=100)
 
-# Analyze results
+# Analiza wyników
 print(comparison.generate_report())
 comparison.plot_comparison(save_path='results.png')
 
-# Check policies
+# Sprawdzenie polityk
 policy_comp = comparison.compare_policies()
-print(f"Agreement: {policy_comp['agreement_percentage']:.1f}%")
+print(f"Zgodność: {policy_comp['agreement_percentage']:.1f}%")
 
-# Check time-consistency
+# Sprawdzenie spójności czasowej
 consistency = comparison.analyze_time_consistency(
     initial_state=5, 
     horizon=10
 )
-print(f"Time-consistent: {consistency['is_time_consistent']}")
+print(f"Spójny czasowo: {consistency['is_time_consistent']}")
 ```
 
-## Key Results to Analyze
+## Kluczowe wyniki do analizy
 
-1. **Policy Differences:** Where do the policies differ and why?
-2. **Value Functions:** How do value estimates compare?
-3. **Time-Consistency:** Is the QH policy time-consistent?
-4. **Present-Bias Impact:** How does σ affect behavior?
+1. **Różnice w politykach:** Gdzie polityki się różnią i dlaczego?
+2. **Funkcje wartości:** Jak porównują się estymaty wartości?
+3. **Spójność czasowa:** Czy polityka QH jest spójna czasowo?
+4. **Wpływ uprzedzenia teraźniejszości:** Jak α wpływa na zachowanie?
 
-## Output
+## Wyjście
 
-Results are saved to:
-- `../../data/results/` - Numerical results
-- `../../data/plots/` - Visualizations
+Wyniki są zapisywane do:
+- `../../data/results/` - Wyniki numeryczne
+- `../../data/plots/` - Wizualizacje
 
-## Dependencies
+## Zależności
 
 ```python
 numpy>=1.20.0
