@@ -25,15 +25,24 @@
 \LoadClass{book}
 
 \RequirePackage[left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm,headheight=50pt]{geometry}
+\RequirePackage{setspace}
+\onehalfspacing
+\setlength{\parindent}{1.25cm}
+\setlength{\parskip}{0pt}
+\widowpenalty=10000
+\clubpenalty=10000
+
 \RequirePackage{microtype}
 \RequirePackage[utf8]{inputenc}
 \RequirePackage[T1]{fontenc}
-\RequirePackage{lmodern}
+\RequirePackage{mathptmx} % Times New Roman
 \RequirePackage{scrextend}
 \let\lll\undefined
 \RequirePackage{amsmath,amsfonts,amssymb,amsthm}
 \RequirePackage{enumerate}
 \RequirePackage{caption}
+\captionsetup[table]{position=top}
+\captionsetup[figure]{position=bottom}
 \RequirePackage{afterpage}
 \RequirePackage{multirow}
 \RequirePackage{enumitem}
@@ -41,6 +50,30 @@
 \RequirePackage[svgnames]{xcolor}
 \RequirePackage{float}
 \RequirePackage{xstring,xifthen}
+\RequirePackage{titlesec}
+
+% Formatowanie tytułów rozdziałów
+\titleformat{\chapter}[block]
+  {\bfseries\large} % Format: pogrubione, 14pkt (w przybliżeniu \large dla 12pt)
+  {\thechapter.} % Etykieta: Numer rozdziału z kropką
+  {0.5em} % Odstęp między numerem a tytułem
+  {} % Kod przed tytułem
+\titlespacing*{\chapter}{0pt}{0pt}{12pt} % Odstępy: lewy, przed, po
+
+% Formatowanie tytułów sekcji (opcjonalnie, dla spójności)
+\titleformat{\section}
+  {\bfseries\normalsize}
+  {\thesection.}
+  {0.5em}
+  {}
+\titlespacing*{\section}{0pt}{12pt}{6pt}
+
+\titleformat{\subsection}
+  {\bfseries\normalsize}
+  {\thesubsection.}
+  {0.5em}
+  {}
+\titlespacing*{\subsection}{0pt}{12pt}{6pt}
 \newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 \newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
 \RequirePackage{stackengine} 
@@ -385,7 +418,7 @@ For the purposes of archival thesis qualified to:*
 \renewcommand{\sectionmark}[1]{\markright{#1}}
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[LE,RO]{\thepage}
+\fancyfoot[C]{\thepage}
 \fancyhead[LO]{\itshape\nouppercase{\rightmark}}
 \fancyhead[RE]{{\leftmark}}
 \renewcommand{\headrulewidth}{0pt}
