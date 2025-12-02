@@ -1,121 +1,194 @@
 \chapter{Ramy teoretyczne}
 
+\section{Uczenie ze wzmocnieniem}
+
+Uczenie ze wzmocnieniem (ang. \textit{reinforcement learning}, RL) jest paradygmatem uczenia maszynowego, w którym \textbf{decydent (agent)} obserwuje stan $s \in S$ i wybiera akcję $a \in A$, aby maksymalizować przyszłe nagrody. \textbf{Środowisko} opisane jest przez dynamikę $q(s' \mid s,a)$ i funkcję nagrody $r(s,a)$, które określają konsekwencje działań. \textbf{Polityka} $\phi$ to reguła decyzyjna mapująca stany (lub historie) na rozkłady akcji. Klasyczny cykl RL można opisać jako: obserwacja $\rightarrow$ decyzja $\rightarrow$ nagroda $\rightarrow$ nowy stan.
+
+\subsection{Quasi-hiperboliczne uczenie ze wzmocnieniem}
+
+Wersja quasi-hiperboliczna wzbogaca RL o uprzedzenie teraźniejszości (ang. \textit{present bias}): wagi dyskontowe mają postać $d(0)=1$, $d(t)=\alpha\,\beta^{t}$ dla $t \ge 1$. Parametr $\alpha > 0$ zwiększa względną wartość nagród natychmiastowych, a $\beta \in [0,1)$ zachowuje zależność wykładniczą w przyszłości. Optymalizacja polityki wymaga pogodzenia krótkoterminowych impulsów z celami długoterminowymi. Taki model lepiej odzwierciedla decyzje ludzi, którzy preferują wcześniejsze nagrody.
+
 \section{Definicja modelu}
 
-Model markowskiego procesu decyzyjnego (MDP) z dyskontowaniem quasi-hiperbolicznym jest zdefiniowany jako:  $M = (S, A, q, r, \alpha, \beta)$, gdzie:
+Model markowskiego procesu decyzyjnego (MDP) z dyskontowaniem quasi-hiperbolicznym jest zdefiniowany jako: $M = (S, A, q, r, \alpha, \beta)$, gdzie:
 
 \begin{itemize}
-\item $S$ - zbiór stanów
-\item $A$ - zbiór akcji
-\item $q$ - prawdopodobieństwo przejścia $q(s'|s,a)$
-\item $r$ - $S \times A \rightarrow R$, funkcja nagrody
-\item $\alpha > 0$ - parametr skłonności do teraźniejszości
-\item $\beta \in [0,1)$ - standardowy współczynnik dyskontowania wykładniczego
+\item $S$ -- zbiór stanów,
+\item $A$ -- zbiór akcji,
+\item $q(s' \mid s,a)$ -- prawdopodobieństwo przejścia ze stanu $s$ do stanu $s'$ przy akcji $a$,
+\item $r : S \times A \rightarrow \mathbb{R}$ -- funkcja nagrody,
+\item $\alpha > 0$ -- parametr wzmacniający wagę nagród natychmiastowych,
+\item $\beta \in [0,1)$ -- standardowy współczynnik dyskontowania wykładniczego.
 \end{itemize}
+
+Dyskontowanie quasi-hiperboliczne jest zadane przez: $d(0) = 1$, a dla $t \ge 1$ mamy $d(t) = \alpha\,\beta^t$.
+
+\section{Przestrzenie pomocnicze}
 
 Oznaczmy przez:
 \begin{enumerate}
-\item $\Pr(A)$ - zbiór miar propabilistycznych nad zbiorem $A$; ponieważ $A$ jest skończony, każda miara propabilistyczna może być reprezentowana jako wektor w przestrzeni euklidesowej $\mathbb{R}^{|A|}$.
-\item $\mathcal{H}_n$ - zbiór historii procesu decyzyjnego do czasu $n$, gdzie każda historia $h_n \in \mathcal{H}_n$ ma postać $h_n = (s_0, a_0, s_1, a_1, \ldots, s_n)$ oraz $h_0 = s_0$.
+\item $\Pr(A)$ -- zbiór miar probabilistycznych na $A$; dla skończonego $A$ utożsamiamy z $\mathbb{R}^{|A|}$.
+\item $\mathcal{H}_n$ -- historie długości $n$: $h_n = (s_0, a_0, s_1, a_1, \ldots, s_n)$, przy czym $h_0 = s_0$.
 \end{enumerate}
 
-\section{Polityki}
+Historia gromadzi pełen kontekst interakcji agent--środowisko do czasu $n$.
+
+\section{Polityki decyzyjne}
 
 \begin{enumerate}
-\item Polityką bądź strategią decydenta nazywamy ciąg
-\[
-\phi = (\phi_0, \phi_1, \ldots),
-\]
-gdzie każda reguła decyzyjna $\phi_n$ jest funkcją określoną na zbiorze historii procesu do momentu $n$, tj.
-\[
-\phi_n : \mathcal{H}_n \rightarrow \Pr(A),
-\]
-co oznacza, że $\phi_n(h_n) \in \Pr(A)$ dla każdej historii $h_n \in \mathcal{H}_n$, $n \in \mathbb{N} \cup \{0\} = \mathbb{N}_0$.
-\item Polityki markowskie to takie, które zależą od aktualnego stanu i czasu. Wtedy $\phi = (\phi_0, \phi_1, \ldots)$, gdzie $\phi_n : S \rightarrow \Pr(A)$.
-\item Polityki stacjonarne to takie, które zależą tylko od aktualnego stanu. Wtedy $\phi = (\phi_0, \phi_0, \ldots)$, gdzie $\phi_0 : S \rightarrow \Pr(A)$. W dalszej części pracy będziemy oznaczać polityki stacjonarne przez $\bar\phi$.
+\item Ogólna polityka: $\phi = (\phi_0, \phi_1, \ldots)$, gdzie $\phi_n : \mathcal{H}_n \rightarrow \Pr(A)$ określa rozkład akcji dla każdej historii $h_n \in \mathcal{H}_n$, $n \in \mathbb{N} \cup \{0\} = \mathbb{N}_0$.
+\item Polityki markowskie: zależne od stanu i czasu, $\phi_n : S \rightarrow \Pr(A)$.
+\item Polityki stacjonarne: zależne tylko od stanu, $\phi_s : S \rightarrow \Pr(A)$; będziemy oznaczać je przez $\phi_s$.
 \end{enumerate}
 
-Oznaczmy zbiory polityk przez
-\begin{flalign*}
-  \Phi   &\text{ -- zbiór wszystkich polityk zależnych od historii}    &&\\
-  \Phi_M &\text{ -- zbiór polityk markowskich},                       &&\\
-  \Phi_S &\text{ -- zbiór polityk stacjonarnych}.                    &&
-\end{flalign*}
+Zbiory polityk:
+\begin{itemize}
+\item $\Phi$ -- zbiór wszystkich polityk zależnych od historii,
+\item $\Phi_m$ -- zbiór polityk markowskich,
+\item $\Phi_s$ -- zbiór polityk stacjonarnych.
+\end{itemize}
 
 \section{Funkcja wypłaty}
-Rozważamy oczekiwaną wypłatę w nieskończonym horyzoncie czasowym z dyskontowaniem quasi-hiperbolicznym.
-Współczynniki w kolejnych okresach wynoszą 1, $\alpha \beta$, $\alpha \beta^2$, $\alpha \beta^3$, \ldots.
+
+Rozważamy oczekiwaną wypłatę w nieskończonym horyzoncie czasowym z dyskontowaniem quasi-hiperbolicznym. Współczynniki w kolejnych okresach wynoszą 1, $\alpha \beta$, $\alpha \beta^2$, $\alpha \beta^3$, \ldots.
+
 Wypłata dyskontowana w nieskończonym horyzoncie czasowym dla polityki $\phi \in \Phi$ i stanu początkowego $s_0$ jest dana wyrażeniem
-\begin{equation}
-J_{\phi}^{\alpha,\beta}(s_0)
-= \mathbb{E}_{\substack{a_0 \sim \phi_0(\cdot \mid s_0)\\s' \sim q(\cdot \mid s_0,a_0)}} \left[ r(s_0,a_0)
-    + \alpha\, \beta\, J_{\overrightarrow{\phi}}^{\beta}(s') \right],
+\begin{align}
+    J_{\phi}^{\alpha,\beta}(s_0)
+    &= \mathbb{E}_{\substack{a_0 \sim \phi_0(\cdot \mid s_0) \\ s' \sim q(\cdot \mid s_0,a_0)}}
+      \left[ r(s_0,a_0) + \alpha\,\beta\, J_\phi^{\beta}(s') \right] \nonumber \\
+    &= \sum_a \phi_0(a \mid s_0) \left[ r(s_0,a) + \alpha\,\beta\, \sum_{s'} q(s' \mid s_0,a) J_\phi^{\beta}(s') \right],
 \label{eq:qh-return}
-\end{equation}
-gdzie $\overrightarrow{\phi} = (\phi_1, \phi_2, \ldots)$, a $J_{\overrightarrow{\phi}}^{\beta}(s')$ oznacza standardową wypłatę oczekiwaną z dyskontowaniem wykładniczym
+\end{align}
+gdzie $\overrightarrow{\phi} = (\phi_1, \phi_2, \ldots)$, a $J_{\phi}^{\beta}(s')$ oznacza standardową wypłatę oczekiwaną z dyskontowaniem wykładniczym
 \begin{equation}
-J_{\overrightarrow{\phi}}^{\beta}(s') =  \sum_{n=1}^{\infty} \beta^{\,n-1}\, r^{(n)}(s', \overrightarrow{\phi}),
+J_\phi^{\beta}(s') = \sum_{n=1}^{\infty} \beta^{n-1} \; r^{(n)}(s', \overrightarrow{\phi}).
 \label{eq:beta-value}
 \end{equation}
-przy czym
-\begin{equation}
-r^{(n)}(s', \overrightarrow{\phi}) = \mathbb{E} \bigl[\, r(s_{n-1}, a_{n-1}) \mid s_1 = s',\, \overrightarrow{\phi} \bigr]
-\end{equation}
-jest oczekiwaną nagrodą w $n$-tym kroku procesu, licząc od chwili startu w stanie $s'$ i stosując politykę $\overrightarrow{\phi}$.
 
-\begin{theorem}
-Dla powyższego MDP z dyskontowaniem quasi-hiperbolicznym oraz dowolnej polityki $\phi = (\phi_0,\phi_1,\ldots) \in \Phi$ istnieją reguły decyzyjne $\mu$ i $\bar\phi$ takie, że:
+\subsection{Oczekiwana nagroda w kroku n}
+
+Funkcja $r^{(n)}(s', \overrightarrow{\phi})$ oznacza oczekiwaną nagrodę w $n$-tym kroku procesu:
+\begin{equation}
+r^{(n)}(s', \overrightarrow{\phi}) = \mathbb{E}_{\overrightarrow{\phi}}\!\left[ r(s_n, a_n) \;\middle|\; s_0 = s' \right].
+\end{equation}
+Jest to oczekiwanie po trajektoriach generowanych przez politykę $\overrightarrow{\phi} = (\phi_1, \phi_2, \ldots)$.
+
+Dla $n = 1$:
+\begin{align*}
+  r^{(1)}(s_1, \overrightarrow{\phi})
+  &= \sum_{a_0}\sum_{s_1}\sum_{a_1}\,
+  r(s_1, a_1)\,
+  \phi_1(a_1 \mid s_1,a_0,s_0)\,
+    q(s_1 \mid s_0, a_0)\,
+    \phi_0(a_0 \mid s_0).
+\end{align*}
+
+Dla $n = 2$:
+\begin{align*}
+  r^{(2)}(s_2, \overrightarrow{\phi})
+    &= \sum_{a_0}\sum_{s_1}\sum_{a_1}\sum_{s_2}\sum_{a_2}
+      r(s_2, a_2)\,
+      \phi_2(a_2 \mid s_2,a_1,s_1,a_0,s_0) \,
+      q(s_2 \mid s_1, a_1)\, \\
+      &\qquad{}\phi_1(a_1 \mid s_1,a_0,s_0)\,
+      q(s_1 \mid s_0, a_0)\,
+      \phi_0(a_0 \mid s_0).
+\end{align*}
+
+\section{Struktura optymalnej polityki}
+
+\begin{theorem}[Redukcja polityk]
+\label{thm:policy-reduction}
+Dla dowolnej $\phi \in \Phi$ istnieją reguły $\mu$ i $\phi_s$ takie, że
 \[
-J_{\phi}^{\alpha,\beta}(s) = J_{(\mu,\bar\phi)}^{\alpha,\beta}(s), \qquad \forall s \in S,
+  J_{\phi}^{\alpha,\beta}(s) = J_{(\mu,\phi_s)}^{\alpha,\beta}(s), \qquad \forall s \in S.
 \]
-gdzie $(\mu,\bar\phi)$ oznacza politykę, która w pierwszym kroku wykorzystuje $\mu$, a w kolejnych krokach politykę stacjonarną $\bar\phi$.
 \end{theorem}
 
+Pierwszy krok steruje dowolna reguła $\mu = \phi_0$, kolejne kroki wykorzystują stacjonarną $\phi_s$. Analiza optymalności sprowadza się do klas polityk dwuskładnikowych $(\mu,\phi_s)$.
+
 \begin{proof}
-Niech dyskontowanie quasi-hiperboliczne będzie zadane przez funkcje
+Dla dowolnej historycznej polityki $\phi = (\phi_0, \phi_1, \ldots)$ mamy
 \[
-d(t) = 
-\begin{cases}
-1, & t = 0,\\[2pt]
-\alpha\, \beta^{t}, & t \ge 1.
-\end{cases}
+  J_{\phi}^{\alpha,\beta}(s) = \mathbb{E}\!\left[ \sum_{t=0}^{\infty} d(t)\, r(s_t, a_t) \;\middle|\; s_0 = s \right],
 \]
-Z definicji funkcji wartości otrzymujemy
-\begin{equation}
-J_{\phi}^{\alpha,\beta}(s) = \mathbb{E} \Biggl[ \sum_{t=0}^{\infty} d(t)\, r(s_t,a_t) \,\Bigg|\, s_0 = s \Biggr].
-\label{eq:qh-value-definition}
-\end{equation}
-Warunkując po pierwszej akcji $a_0 \sim \phi_0(\cdot \mid s)$ oraz następnym stanie $s_1 \sim q(\cdot \mid s,a_0)$, otrzymujemy
-\begin{align}
-J_{\phi}^{\alpha,\beta}(s)
-&= \mathbb{E}_{a_0 \sim \phi_0(\cdot \mid s)} \Bigl[\, r(s,a_0) + \mathbb{E} \bigl[ \alpha \beta \sum_{t=1}^{\infty} \beta^{t-1} r(s_t,a_t) \mid s_1, a_0 \bigr] \Bigr] \nonumber\\
-&= \mathbb{E}_{\substack{a_0 \sim \phi_0(\cdot \mid s)\\ s' \sim q(\cdot \mid s,a_0)}} \left[ r(s,a_0) + \alpha\, \beta\, J_{\overrightarrow{\phi}}^{\beta}(s') \right],
-\label{eq:qh-one-step}
-\end{align}
-co jest równaniem \eqref{eq:qh-return}. Dla stałego współczynnika dyskontowania $\beta$ wiadomo (por. klasyczne wyniki programowania dynamicznego), że istnieje stacjonarna polityka $\bar\phi$ taka, iż
-\begin{equation}
-J_{\overrightarrow{\phi}}^{\beta}(s) = J_{\bar\phi}^{\beta}(s), \qquad \forall s \in S.
-\label{eq:stationary-beta}
-\end{equation}
-Wybierzmy $\mu = \phi_0$ oraz skonstruujmy politykę $(\mu,\bar\phi)$: pierwszy krok realizuje $\mu$, a dla $t \ge 1$ stosowana jest $\bar\phi$. Podstawiając \eqref{eq:stationary-beta} do \eqref{eq:qh-one-step} otrzymujemy
+gdzie $d(0) = 1$ oraz $d(t) = \alpha\,\beta^{t}$ dla $t \ge 1$.
+
+Rozwijając wartość oczekiwaną otrzymujemy
 \[
-J_{\phi}^{\alpha,\beta}(s)
-= \mathbb{E}_{\substack{a_0 \sim \mu(\cdot \mid s)\\ s' \sim q(\cdot \mid s,a_0)}} \left[ r(s,a_0) + \alpha\, \beta\, J_{\bar\phi}^{\beta}(s') \right]
-= J_{(\mu,\bar\phi)}^{\alpha,\beta}(s),
+  J_{\phi}^{\alpha,\beta}(s) = \mathbb{E}\!\left[ r(s_0,a_0) + \sum_{t=1}^{\infty} \alpha \beta^{t}\, r(s_t,a_t) \;\middle|\; s_0 = s \right].
+\]
+
+Warunkując po pierwszej akcji $a_0 \sim \phi_0(\cdot \mid s)$ dostajemy
+\[
+  J_{\phi}^{\alpha,\beta}(s) = \mathbb{E}_{a_0 \sim \phi_0(\cdot \mid s)}\!\left[ r(s,a_0) + \,\mathbb{E}\!\left[ \sum_{t=1}^{\infty} \alpha \beta^{t}\, r(s_t,a_t) \;\middle|\; s_0 = s, a_0 \right] \right].
+\]
+
+Kolejne warunkowanie względem $s' \sim q(\cdot \mid s,a_0)$ daje
+\[
+  J_{\phi}^{\alpha,\beta}(s) = \mathbb{E}_{\substack{a_0 \sim \phi_0(\cdot \mid s) \\ s' \sim q(\cdot \mid s,a_0)}}\!\left[ r(s,a_0) + \alpha\beta\,\mathbb{E}\!\left[ \sum_{t=1}^{\infty} \beta^{t-1}\, r(s_t,a_t) \;\middle|\; s_1=s' \right] \right].
+\]
+
+Pozostała suma dyskontowana ma postać wykładniczą, więc
+\[
+  \mathbb{E}\!\left[ \sum_{t=1}^{\infty} \beta^{t-1}\, r(s_t,a_t) \;\middle|\; s_1 = s' \right] = \,J_{\overrightarrow{\phi}}^{\beta}(s_1),
+\]
+gdzie $\overrightarrow{\phi} = (\phi_1, \phi_2, \ldots)$ i $J^{\beta}$ odpowiada klasycznemu dyskontowaniu wykładniczemu.
+
+Dla takiego dyskontowania istnieje stacjonarna polityka $\phi_s \in \Phi_s$, która spełnia
+\[
+  J^{\beta}_{\overrightarrow{\phi}}(s') = J^{\beta}_{\phi_s}(s'), \qquad \forall s' \in S.
+\]
+
+Podstawiając do poprzedniego równania, otrzymujemy
+\[
+  J_{\phi}^{\alpha,\beta}(s) = \sum_{a}\phi_{0}(a \mid s)\!\left[ r(s,a) + \alpha\,\beta\, \sum_{s'} q(s' \mid s,a) J^{\beta}_{\phi_s}(s') \right].
+\]
+
+Wybierając $\mu = \phi_0$ jako regułę pierwszego kroku, uzyskujemy żądaną równość
+\[
+  J_{\phi}^{\alpha,\beta}(s) = J_{(\mu,\phi_s)}^{\alpha,\beta}(s), 
 \]
 co kończy dowód.
 \end{proof}
 
 \section{Optymalna polityka}
 
-W modelu z dyskontowaniem quasi-hiperbolicznym optymalne polityki mają specyficzną strukturę, różniącą się od przypadku wykładniczego. Dla decydenta zobowiązanego (precommitted agent) optymalna polityka jest niestacjonarna.
+W modelu z dyskontowaniem quasi-hiperbolicznym optymalne polityki mają specyficzną strukturę, różniącą się od przypadku wykładniczego. 
 
-\section{Właściwości teoretyczne}
+\subsection{Definicja optymalnej polityki}
 
-\subsection{Istnienie optymalnej polityki}
+Optymalna para $(\mu^\star, \phi_s^\star) \in \Phi_m \times \Phi_s$ maksymalizuje wartość w każdym stanie:
+\begin{equation}
+V^{\alpha, \beta}_{\mu^\star, \phi_s^\star}(s) = \max_{\mu \in \Phi_m} \max_{\phi_s \in \Phi_s} V^{\alpha, \beta}_{\mu, \phi_s}(s), \quad \forall s \in S.
+\end{equation}
 
-W tej sekcji przedstawiamy warunki zapewniające istnienie optymalnej polityki dla decydenta zobowiązanego.
+\subsection{Wyprowadzenie struktury optymalnej polityki}
 
-\subsection{Struktura optymalnej polityki}
+Punktem wyjścia jest redukcja polityk (Twierdzenie~\ref{thm:policy-reduction}):
+\begin{align}
+V^{\alpha, \beta}_{\mu^\star, \phi_s^\star}(s) &= \max_{\mu \in \Phi_m} \max_{\phi_s \in \Phi_s} \sum_{a \in A} \mu(a\mid s) \Big[ r(s, a) + \alpha \beta \sum_{s' \in S} q(s'\mid s, a) V^{\beta}_{\phi_s}(s') \Big] \nonumber \\
+&= \max_{\mu \in \Phi_m} \sum_{a \in A} \mu(a\mid s) \Big[ r(s, a) + \alpha \beta \sum_{s'} q(s'\mid s, a) \max_{\phi_s \in \Phi_s} V^{\beta}_{\phi_s}(s') \Big].
+\end{align}
 
-Pokazujemy, że optymalna polityka ma strukturę dwuskładnikową, co znacznie upraszcza obliczenia.
+Dla dyskontowania wykładniczego optymalna jest $\pi_\beta^\star$, stąd $\phi_s^\star = \pi_\beta^\star$ oraz $V^{\beta}_{\phi_s^\star} = V^{\beta}_\star$.
+
+Optymalna reguła pierwszego kroku:
+\begin{equation}
+\mu^\star(s) = \arg\max_{a \in A} \left[ r(s, a) + \alpha \beta \sum_{s'} q(s'\mid s, a) V^{\beta}_{\pi^\star_\beta}(s') \right].
+\end{equation}
+
+\begin{theorem}[Deterministyczna optymalna polityka]
+\label{thm:deterministic-optimal}
+Istnieje deterministyczna optymalna para $(\mu^\star, \phi_s^\star)$ taka, że
+\begin{equation}
+V^{\alpha, \beta}_{\mu^\star, \phi_s^\star}(s) = \max_{\mu \in \Phi_m} \max_{\phi_s \in \Phi_s} V^{\alpha, \beta}_{\mu, \phi_s}(s), \quad \forall s \in S.
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+Polityka $\phi_s^\star$ jest deterministyczna, ponieważ $\pi_\beta^\star$ w klasycznym MDP taką jest. Optymalizacja $\mu$ nad sympleksem $\Pr(A)$ jest liniowa, więc optimum znajduje się w wierzchołku, co oznacza deterministyczne $\mu^\star$.
+\end{proof}
+
+W praktyce wystarczy przeszukiwać $\mu^\star \in A^S$ oraz $\phi_s^\star \in A^S$.
