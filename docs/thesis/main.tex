@@ -35,43 +35,43 @@ Niestety taka polityka nie będzie spójna czasowo.}
 \chapter*{Spis symboli i oznaczeń}
 \addcontentsline{toc}{chapter}{Spis symboli i oznaczeń}
 \begin{itemize}
-    \item[$M = (S,A,q,r,\alpha,\beta)$] -- markowski proces decyzyjny z dyskontowaniem quasi-hiperbolicznym
+    \item[$M$] -- markowski proces decyzyjny
     \item[$S$] -- zbiór stanów
     \item[$A$] -- zbiór akcji
-    \item[$q(s' \mid s,a)$] -- prawdopodobieństwo przejścia ze stanu $s$ do stanu $s'$ po akcji $a$
-    \item[$r(s,a)$] -- funkcja nagrody
-    \item[$d(t)$] -- funkcja dyskontująca, $d(0)=1$, $d(t)=\alpha\beta^{t}$ dla $t\ge1$
-    \item[$\alpha$] -- parametr uprzedzenia teraźniejszości (\textit{present bias})
-    \item[$\beta$] -- wykładniczy współczynnik dyskontowania z $(0,1)$
-    \item[$\Pr(A)$] -- zbiór miar probabilistycznych na zbiorze akcji $A$
-    \item[$\mathcal{H}_n$] -- historie długości $n$ tworzące kontekst decyzyjny
-    \item[$\Phi$, $\Phi_m$, $\Phi_s$] -- odpowiednio: wszystkie polityki historyczne, markowskie i stacjonarne
-    \item[$\phi$] -- ogólna polityka; $\overrightarrow{\phi}$ oznacza jej "ogon" $(\phi_1,\phi_2,\ldots)$
-    \item[$\phi_s$] -- stacjonarna polityka stosowana po pierwszym kroku
-    \item[$\mu$] -- reguła pierwszego kroku (polityka markowska)
-    \item[$(\mu^\star, \phi_s^\star)$] -- para optymalnych polityk dla dyskontowania quasi-hiperbolicznego
-    \item[$\pi_\beta^\star$] -- optymalna polityka dla klasycznego dyskontowania wykładniczego
-    \item[$J_{\phi}^{\alpha,\beta}(s)$] -- wartość oczekiwana z dyskontowaniem quasi-hiperbolicznym
-    \item[$J_{\phi}^{\beta}(s)$] -- klasyczna wartość oczekiwana z dyskontowaniem wykładniczym
-    \item[$J_{\phi_s}(s)$] -- wartość quasi-hiperboliczna dla polityki stacjonarnej $\phi_s$
-    \item[$V_{\mu, \phi_s}^{\alpha,\beta}(s)$] -- funkcja wartości QH dla pary $(\mu,\phi_s)$
-    \item[$V_{\phi_s}^{\beta}(s)$] -- wartość wykładnicza dla polityki stacjonarnej
-    \item[$Q_{\mu, \phi_s}^{\alpha,\beta}(s,a)$] -- funkcja Q dla quasi-hiperbolicznego uczenia
-    \item[$Q_{\phi_s}^{\beta}(s,a)$] -- funkcja Q dla dyskontowania wykładniczego
-    \item[$Q_{*}^{\alpha,\beta}(s,a)$, $Q_{*}^{\beta}(s,a)$] -- optymalne funkcje Q odpowiednio dla QH i wykładniczego dyskontowania
-    \item[$J_n$, $W_n$, $Q_n$] -- kolejne przybliżenia wartości i funkcji Q w algorytmach dwuskalowych
-    \item[$(\eta_n)$, $(\theta_n)$] -- ciągi kroków uczenia spełniające warunki Robbins--Monro
-    \item[$\nu$] -- polityka próbkowania używana do generowania trajektorii
-    \item[$r^{\text{target}}_n(s)$] -- cel aktualizacji TD w algorytmie oceny polityki
-    \item[$T^{\phi_s}$] -- operator Bellmana dla wartości quasi-hiperbolicznych danej polityki $\phi_s$
-    \item[$\|\cdot\|_\infty$] -- norma maksimum wykorzystywana do analizy kontrakcji operatora
-    \item[$\mathbb{E}_{\phi_s}$, $\mathbb{E}_{\phi_s,q}$] -- wartości oczekiwane względem polityki $\phi_s$ oraz dynamiki $q$
+    \item[$q$] -- prawdopodobieństwo przejścia
+    \item[$r$] -- funkcja nagrody
+    \item[$d(t)$] -- funkcja dyskontująca
+    \item[$\alpha$] -- parametr uprzedzenia teraźniejszości
+    \item[$\beta$] -- współczynnik dyskontowania
+    \item[$\Pr(A)$] -- zbiór miar probabilistycznych
+    \item[$\mathcal{H}_n$] -- historie długości $n$
+    \item[$\Phi$] -- zbiór polityk historycznych
+    \item[$\Phi_m$] -- zbiór polityk markowskich
+    \item[$\Phi_s$] -- zbiór polityk stacjonarnych
+    \item[$\phi$] -- polityka
+    \item[$\phi_s$] -- polityka stacjonarna
+    \item[$\mu$] -- reguła pierwszego kroku
+    \item[$\mu^\star$] -- optymalna reguła pierwszego kroku
+    \item[$\phi_s^\star$] -- optymalna polityka stacjonarna
+    \item[$\pi_\beta^\star$] -- optymalna polityka wykładnicza
+    \item[$J_{\phi}^{\alpha,\beta}$] -- wartość quasi-hiperboliczna
+    \item[$J_{\phi}^{\beta}$] -- wartość wykładnicza
+    \item[$V$] -- funkcja wartości
+    \item[$Q$] -- funkcja Q
+    \item[$J_n$, $W_n$, $Q_n$] -- przybliżenia iteracyjne
+    \item[$\eta_n$, $\theta_n$] -- kroki uczenia
+    \item[$\nu$] -- polityka próbkowania
+    \item[$T^{\phi_s}$] -- operator Bellmana
+    \item[$\|\cdot\|_\infty$] -- norma maksimum
+    \item[$\mathbb{E}$] -- wartość oczekiwana
 \end{itemize}
 
 \mainmatter
 \cleardoublepage
 
 \include{chapters/introduction}
+\cleardoublepage
+\include{chapters/literature_review}
 \cleardoublepage
 \include{chapters/theoretical_framework}
 \cleardoublepage
