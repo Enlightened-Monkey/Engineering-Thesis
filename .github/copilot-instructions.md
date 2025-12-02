@@ -54,7 +54,7 @@ python -m pytest src/tests/ --cov=src
 cd src/experiments
 python comparison_standard_vs_qh.py
 
-# Use main.py for full experiments
+# Use main.py for full experiments (from repository root)
 python main.py --experiment comparison --env inventory --runs 5
 ```
 
