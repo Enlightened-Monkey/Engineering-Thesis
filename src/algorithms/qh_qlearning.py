@@ -112,6 +112,10 @@ class QHQLearning:
         self.epsilon = epsilon
         self._iteration = 0
         
+        # LOCAL COUNT-BASED STEP SIZES: Track visits per (s,a) pair
+        # This ensures rarely-visited pairs get adequate learning opportunities
+        self._visit_counts = np.zeros((n_states, n_actions), dtype=np.int64)
+        
         # Initialize Q-functions
         # OPTIMISTIC INITIALIZATION: Start with high values to encourage exploration
         self.W = np.full((n_states, n_actions), 25.0)  # Auxiliary Q-function W
@@ -151,7 +155,8 @@ class QHQLearning:
         # Snapshot W_n(s, a) before the fast update
         w_prev = self.W[state, action]
 
-        eta_n, theta_n = self._next_step_sizes()
+        # LOCAL STEP SIZES: Compute based on visits to THIS specific (s,a) pair
+        eta_n, theta_n = self._next_step_sizes(state, action)
 
         # Fast timescale (\eta_n): exponential baseline W
         max_w_next = 0.0 if done else np.max(self.W[next_state])
@@ -164,13 +169,30 @@ class QHQLearning:
         td_error_q = qh_target - self.Q[state, action]
         self.Q[state, action] += theta_n * td_error_q
 
-    def _next_step_sizes(self) -> tuple[float, float]:
-        """Generate the next pair of Robbins--Monro step sizes."""
-
+    def _next_step_sizes(self, state: int, action: int) -> tuple[float, float]:
+        """Generate the next pair of Robbins--Monro step sizes for a specific (s,a) pair.
+        
+        Uses LOCAL counting per state-action pair instead of global iteration count.
+        This ensures rarely-visited pairs receive adequate learning opportunities.
+        
+        Args:
+            state: Current state
+            action: Current action
+            
+        Returns:
+            Tuple of (eta_n, theta_n) step sizes for this specific (s,a) pair
+        """
+        # Increment visit count for THIS (s,a) pair
+        self._visit_counts[state, action] += 1
+        
+        # Also increment global iteration for backward compatibility
         self._iteration += 1
+        
+        # LOCAL STEP SIZE: Based on visits to THIS specific (s,a) pair
         # OFFSET: Add 100.0 to denominator to prevent huge initial steps
         # This stabilizes learning when starting with high initial values (25.0)
-        denom = 100.0 + self._iteration
+        n_visits = self._visit_counts[state, action]
+        denom = 100.0 + n_visits
         eta_n = self.eta_step / (denom ** self.eta_power)
         theta_n = self.theta_step / (denom ** self.theta_power)
         return eta_n, theta_n
@@ -212,6 +234,7 @@ class QHQLearning:
             "W": self.W,
             "Q": self.Q,
             "iteration": int(self._iteration),
+            "visit_counts": self._visit_counts,
             # Backward compatibility payload
             "sigma": float(self.alpha),
             "gamma": float(self.beta),
@@ -261,6 +284,13 @@ class QHQLearning:
         self.W = np.array(state.get("W", state.get("q_exp")), copy=True)
         self.Q = np.array(state.get("Q", state.get("q_qh")), copy=True)
         self._iteration = int(state.get("iteration", 0))
+        
+        # Load visit counts with backward compatibility
+        if "visit_counts" in state:
+            self._visit_counts = np.array(state["visit_counts"], copy=True)
+        else:
+            # For older saves without visit counts, initialize to zeros
+            self._visit_counts = np.zeros((self.n_states, self.n_actions), dtype=np.int64)
 
     def save(self, path: Path | str, metadata: Optional[Dict[str, Any]] = None) -> Path:
         """Persist agent parameters to a compressed ``.npz`` file."""
@@ -339,6 +369,13 @@ class QHQLearning:
 
             if "iteration" in data:
                 agent._iteration = int(data["iteration"])
+            
+            # Load visit counts with backward compatibility
+            if "visit_counts" in data:
+                agent._visit_counts = np.array(data["visit_counts"], copy=True)
+            else:
+                # For older saves without visit counts, initialize to zeros
+                agent._visit_counts = np.zeros((n_states, n_actions), dtype=np.int64)
 
             metadata = None
             if "metadata_json" in data:
