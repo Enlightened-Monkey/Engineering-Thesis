@@ -189,10 +189,10 @@ class QHQLearning:
         self._iteration += 1
         
         # LOCAL STEP SIZE: Based on visits to THIS specific (s,a) pair
-        # OFFSET: Add 100.0 to denominator to prevent huge initial steps
-        # This stabilizes learning when starting with high initial values (25.0)
+        # Use a smaller offset (10.0 instead of 100.0) to allow faster learning
+        # for rarely-visited pairs while still preventing huge initial steps
         n_visits = self._visit_counts[state, action]
-        denom = 100.0 + n_visits
+        denom = 10.0 + n_visits
         eta_n = self.eta_step / (denom ** self.eta_power)
         theta_n = self.theta_step / (denom ** self.theta_power)
         return eta_n, theta_n
