@@ -72,8 +72,11 @@ Praca bada **dyskontowanie quasi-hiperboliczne (QH)** jako alternatywę dla dysk
 2. **Rozwój algorytmów**: 
    - Bezmodelowa ocena polityki z wykorzystaniem aproksymacji stochastycznej dwuskalowej
    - Algorytm QH Q-Learning z gwarancjami zbieżności
+   - **Lokalne liczniki wizyt**: Poprawiona zbieżność dla rzadko odwiedzanych par stan-akcja (nowa implementacja)
 3. **Zastosowanie praktyczne**: Model gromadzenia zapasów demonstrujący niespójne czasowo optymalne polityki
 4. **Walidacja empiryczna**: Kompleksowa ewaluacja eksperymentalna i porównanie z tradycyjnymi metodami
+
+> **Uwaga:** Implementacja QH Q-Learning używa lokalnych liczników wizyt per para (stan, akcja) zamiast globalnego licznika iteracji. To zapewnia poprawną zbieżność dla rzadko odwiedzanych par (błąd zmniejszony z >10.0 do <2.0). Zobacz `docs/LOCAL_COUNT_STEP_SIZES.md` po szczegóły.
 
 ### Model dyskontowania quasi-hiperbolicznego
 
