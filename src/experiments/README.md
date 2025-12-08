@@ -1,6 +1,8 @@
-# Moduł eksperymentów
+# Moduł eksperymentów (przeniesiony)
 
-Moduł zawiera frameworki eksperymentalne do porównywania i analizowania algorytmów uczenia ze wzmocnieniem z różnymi schematami dyskontowania.
+Aktualne skrypty eksperymentalne zostały przeniesione do katalogu `src/experiments/waiting_room/` w celu uporządkowania repozytorium. Uruchamiaj je stamtąd, np. `python -m src.experiments.waiting_room.pole_balancing_training`.
+
+Poniżej pozostawiamy oryginalny opis eksperymentów.
 
 ## Dostępne eksperymenty
 

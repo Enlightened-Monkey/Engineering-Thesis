@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Callable, Dict, Optional, Tuple
+from typing import Callable, Dict, Optional, Tuple, Union
 
 import numpy as np
 
-TransitionSampler = Callable[[int, int], Tuple[int, float]]
+TransitionOutcome = Union[Tuple[int, float], Tuple[int, float, bool], Tuple[int, float, bool, Dict[str, object]]]
+TransitionSampler = Callable[[int, int], TransitionOutcome]
 PolicyMatrix = np.ndarray
 StepSchedule = Callable[[int], float]
+ResetFn = Callable[[], int]
+TerminalFn = Callable[[int], bool]
 
 
 class QHPolicyEvaluation:
@@ -185,6 +188,10 @@ class QHPolicyEvaluation:
         rng: Optional[np.random.Generator] = None,
         reference_values: Optional[np.ndarray] = None,
         adjust_support: bool = True,
+        support_mix: float = 1e-2,
+        reset_on_terminal: bool = True,
+        reset_fn: Optional[ResetFn] = None,
+        terminal_function: Optional[TerminalFn] = None,
     ) -> Dict[str, np.ndarray]:
         r"""Execute Algorithm 1 with the provided policies and sampler.
 
@@ -200,6 +207,11 @@ class QHPolicyEvaluation:
                 ``\|W_n - V^β_{φ_s}\|_2`` each iteration.
             adjust_support: When ``True`` ensure ``ν`` covers the support of both
                 evaluation policies by injecting their mass where needed.
+            support_mix: Mixing coefficient added from evaluation policies into ``ν``.
+            reset_on_terminal: Whether to draw a fresh state after reaching a terminal state.
+            reset_fn: Optional callable producing the reset state (defaults to ``initial_state``).
+            terminal_function: Optional predicate marking terminal states when the sampler
+                does not return a ``done`` flag.
 
         Returns:
             Dictionary containing histories and the final ``W``/``J`` estimates.
@@ -211,8 +223,10 @@ class QHPolicyEvaluation:
         self._assert_same_shape(nu, mu, phi)
 
         if adjust_support:
-            nu = self.ensure_support(nu, mu)
-            nu = self.ensure_support(nu, phi)
+            if not 0.0 < support_mix < 1.0:
+                raise ValueError("support_mix must lie in (0, 1).")
+            nu = self.ensure_support(nu, mu, mix_weight=support_mix)
+            nu = self.ensure_support(nu, phi, mix_weight=support_mix)
 
         rng = np.random.default_rng() if rng is None else rng
         n_actions = nu.shape[1]
@@ -226,16 +240,22 @@ class QHPolicyEvaluation:
                 raise ValueError("reference_values must match (n_states,).")
             diff_history = np.zeros(n_iterations)
 
+        reset_callable: ResetFn = (reset_fn if reset_fn is not None else lambda: initial_state)
+
+        def is_terminal(state_id: int) -> bool:
+            return bool(terminal_function(state_id)) if terminal_function is not None else False
+
         for t in range(n_iterations):
             states[t] = state
             action = int(rng.choice(n_actions, p=nu[state]))
-            next_state, reward = sampler(state, action)
-            next_state = int(next_state)
-            reward = float(reward)
+            next_state, reward, done = self._sample_transition(sampler, state, action)
 
-            follow_action = int(rng.choice(n_actions, p=phi[next_state]))
-            _, follow_reward = sampler(next_state, follow_action)
-            follow_reward = float(follow_reward)
+            follow_reward = 0.0
+            if not done:
+                follow_action = int(rng.choice(n_actions, p=phi[next_state]))
+                _, follow_reward, _ = self._sample_transition(sampler, next_state, follow_action)
+
+            done = done or is_terminal(next_state)
 
             self.update(
                 state=state,
@@ -251,7 +271,10 @@ class QHPolicyEvaluation:
             if diff_history is not None:
                 diff_history[t] = np.linalg.norm(self.W - reference)
 
-            state = next_state
+            if done and reset_on_terminal:
+                state = int(reset_callable())
+            else:
+                state = next_state
 
         result: Dict[str, np.ndarray] = {
             "states": states,
@@ -284,14 +307,40 @@ class QHPolicyEvaluation:
             raise ValueError("All policies must share the same shape.")
 
     @staticmethod
-    def ensure_support(base_policy: PolicyMatrix, reference_policy: PolicyMatrix) -> PolicyMatrix:
-        """Inject support from ``reference`` into ``base`` when zeros appear."""
+    def ensure_support(
+        base_policy: PolicyMatrix,
+        reference_policy: PolicyMatrix,
+        *,
+        mix_weight: float = 1e-2,
+    ) -> PolicyMatrix:
+        """Blend ``reference`` into ``base`` to guarantee overlapping support."""
 
-        adjusted = np.array(base_policy, copy=True)
-        mask = reference_policy > 0
-        adjusted = np.where(mask, adjusted + reference_policy * 1e-9, adjusted)
+        if not 0.0 < mix_weight < 1.0:
+            raise ValueError("mix_weight must lie in (0, 1).")
+
+        adjusted = (1.0 - mix_weight) * base_policy + mix_weight * reference_policy
         adjusted /= adjusted.sum(axis=1, keepdims=True)
         return adjusted
+
+    @staticmethod
+    def _sample_transition(
+        sampler: TransitionSampler,
+        state: int,
+        action: int,
+    ) -> Tuple[int, float, bool]:
+        outcome = sampler(state, action)
+        if not isinstance(outcome, tuple):
+            raise TypeError("Transition sampler must return a tuple.")
+
+        if len(outcome) == 2:
+            next_state, reward = outcome
+            done = False
+        elif len(outcome) >= 3:
+            next_state, reward, done = outcome[:3]
+        else:
+            raise ValueError("Sampler output must contain at least (next_state, reward).")
+
+        return int(next_state), float(reward), bool(done)
 
     def get_convergence_metrics(self) -> Dict[str, float]:
         """Return norms useful for monitoring convergence."""

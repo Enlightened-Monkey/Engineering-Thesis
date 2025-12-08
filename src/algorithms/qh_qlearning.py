@@ -33,6 +33,8 @@ class QHQLearning:
                  beta: float = 0.95,
                  theta_step: float = 0.1,
                  eta_step: Optional[float] = None,
+                 theta_power: float = 0.8,
+                 eta_power: float = 0.6,
                  epsilon: float = 0.1,
                  **legacy_kwargs: Any):
         r"""
@@ -43,8 +45,10 @@ class QHQLearning:
             n_actions: Number of actions in the MDP  
             alpha: Present-bias parameter ($0 \leq \alpha \leq 1$)
             beta: Exponential discount factor ($0 \leq \beta < 1$)
-            theta_step: Learning rate for the slow timescale ($\theta_n$)
-            eta_step: Learning rate for the fast timescale ($\eta_n$). Defaults to \texttt{theta\_step} when not provided.
+            theta_step: Initial learning rate for the slow timescale ($\theta_n$)
+            eta_step: Initial learning rate for the fast timescale ($\eta_n$). Defaults to \texttt{theta\_step} when not provided.
+            theta_power: Exponent for Robbins--Monro schedule of $\theta_n$ (must be $>0.5$ and greater than \texttt{eta\_power})
+            eta_power: Exponent for Robbins--Monro schedule of $\eta_n$ (must be $>0.5$)
             epsilon: Exploration rate for epsilon-greedy policy
         """
         sigma_legacy = legacy_kwargs.pop("sigma", None)
@@ -80,6 +84,19 @@ class QHQLearning:
         if eta_step is None:
             eta_step = theta_step
 
+        if not 0.0 <= alpha <= 1.0:
+            raise ValueError("alpha must lie in [0, 1]")
+        if not 0.0 <= beta < 1.0:
+            raise ValueError("beta must lie in [0, 1)")
+        if theta_power <= 0.5 or eta_power <= 0.5:
+            raise ValueError("Robbins-Monro exponents must exceed 0.5 for square-summable schedules")
+        if theta_power <= eta_power:
+            warnings.warn(
+                "theta_power should be strictly greater than eta_power to ensure two-timescale separation.",
+                UserWarning,
+                stacklevel=2,
+            )
+
         if legacy_kwargs:
             unexpected = ", ".join(sorted(legacy_kwargs.keys()))
             raise TypeError(f"Unexpected keyword arguments: {unexpected}")
@@ -90,11 +107,15 @@ class QHQLearning:
         self.beta = beta
         self.theta_step = theta_step
         self.eta_step = eta_step
+        self.theta_power = theta_power
+        self.eta_power = eta_power
         self.epsilon = epsilon
+        self._iteration = 0
         
         # Initialize Q-functions
-        self.W = np.zeros((n_states, n_actions))  # Auxiliary Q-function W
-        self.Q = np.zeros((n_states, n_actions))  # Quasi-hyperbolic Q-function
+        # OPTIMISTIC INITIALIZATION: Start with high values to encourage exploration
+        self.W = np.full((n_states, n_actions), 25.0)  # Auxiliary Q-function W
+        self.Q = np.full((n_states, n_actions), 25.0)  # Quasi-hyperbolic Q-function
         
     def get_action(self, state: int, exploration: bool = True) -> int:
         """
@@ -112,8 +133,8 @@ class QHQLearning:
         else:
             return np.argmax(self.Q[state])
     
-    def update(self, state: int, action: int, reward: float, next_state: int) -> None:
-        r"""One step of Algorithm 2 from the slides.
+    def update(self, state: int, action: int, reward: float, next_state: int, *, done: bool = False) -> None:
+        r"""One step of Algorithm 2 with Robbins--Monro schedules and terminal masking.
 
         The fast sequence :math:`(\eta_n)` drives the auxiliary baseline ``W`` using
         :math:`W_{n+1}(s,a) = W_n(s,a) + \eta_n [r + \beta \max_{a'} W_n(s', a') - W_n(s,a)]`.
@@ -125,20 +146,34 @@ class QHQLearning:
             action: Action taken
             reward: Received reward
             next_state: Next state
+            done: Whether ``next_state`` is terminal (prevents bootstrapping)
         """
         # Snapshot W_n(s, a) before the fast update
         w_prev = self.W[state, action]
 
+        eta_n, theta_n = self._next_step_sizes()
+
         # Fast timescale (\eta_n): exponential baseline W
-        max_w_next = np.max(self.W[next_state])
+        max_w_next = 0.0 if done else np.max(self.W[next_state])
         td_error_w = reward + self.beta * max_w_next - w_prev
-        w_new = w_prev + self.eta_step * td_error_w
+        w_new = w_prev + eta_n * td_error_w
         self.W[state, action] = w_new
         
         # Slow timescale (\theta_n): quasi-hyperbolic Q
         qh_target = (1.0 - self.alpha) * reward + self.alpha * w_new
         td_error_q = qh_target - self.Q[state, action]
-        self.Q[state, action] += self.theta_step * td_error_q
+        self.Q[state, action] += theta_n * td_error_q
+
+    def _next_step_sizes(self) -> tuple[float, float]:
+        """Generate the next pair of Robbins--Monro step sizes."""
+
+        self._iteration += 1
+        # OFFSET: Add 100.0 to denominator to prevent huge initial steps
+        # This stabilizes learning when starting with high initial values (25.0)
+        denom = 100.0 + self._iteration
+        eta_n = self.eta_step / (denom ** self.eta_power)
+        theta_n = self.theta_step / (denom ** self.theta_power)
+        return eta_n, theta_n
     
     def get_policy(self) -> np.ndarray:
         """
@@ -171,9 +206,12 @@ class QHQLearning:
             "beta_discount": float(self.beta),
             "theta_step": float(self.theta_step),
             "eta_step": float(self.eta_step),
+            "theta_power": float(self.theta_power),
+            "eta_power": float(self.eta_power),
             "epsilon": float(self.epsilon),
             "W": self.W,
             "Q": self.Q,
+            "iteration": int(self._iteration),
             # Backward compatibility payload
             "sigma": float(self.alpha),
             "gamma": float(self.beta),
@@ -209,14 +247,20 @@ class QHQLearning:
 
         eta_step = float(state.get("eta_step", theta_step))
 
+        theta_power = float(state.get("theta_power", 0.8))
+        eta_power = float(state.get("eta_power", 0.6))
+
         self.alpha = float(alpha_bias)
         self.beta = float(beta_discount)
         self.theta_step = theta_step
         self.eta_step = eta_step
+        self.theta_power = theta_power
+        self.eta_power = eta_power
         self.epsilon = float(state["epsilon"])
 
         self.W = np.array(state.get("W", state.get("q_exp")), copy=True)
         self.Q = np.array(state.get("Q", state.get("q_qh")), copy=True)
+        self._iteration = int(state.get("iteration", 0))
 
     def save(self, path: Path | str, metadata: Optional[Dict[str, Any]] = None) -> Path:
         """Persist agent parameters to a compressed ``.npz`` file."""
@@ -277,6 +321,8 @@ class QHQLearning:
                 theta_step = float(data.get("alpha", 0.1))
 
             eta_step = float(data.get("eta_step", theta_step))
+            theta_power = float(data.get("theta_power", 0.8))
+            eta_power = float(data.get("eta_power", 0.6))
 
             agent = cls(n_states=n_states,
                         n_actions=n_actions,
@@ -284,10 +330,15 @@ class QHQLearning:
                         beta=beta_discount,
                         theta_step=theta_step,
                         eta_step=eta_step,
-                        epsilon=epsilon)
+                        epsilon=epsilon,
+                        theta_power=theta_power,
+                        eta_power=eta_power)
 
             agent.W = np.array(data.get("W", data.get("q_exp")), copy=True)
             agent.Q = np.array(data.get("Q", data.get("q_qh")), copy=True)
+
+            if "iteration" in data:
+                agent._iteration = int(data["iteration"])
 
             metadata = None
             if "metadata_json" in data:
@@ -322,7 +373,7 @@ def train_qh_qlearning(env, agent: QHQLearning, n_episodes: int = 1000) -> Dict:
             action = agent.get_action(state)
             next_state, reward, done, _ = env.step(action)
             
-            agent.update(state, action, reward, next_state)
+            agent.update(state, action, reward, next_state, done=done)
             
             state = next_state
             episode_reward += reward
