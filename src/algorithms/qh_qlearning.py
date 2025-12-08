@@ -181,6 +181,12 @@ class QHQLearning:
             
         Returns:
             Tuple of (eta_n, theta_n) step sizes for this specific (s,a) pair
+            
+        Note:
+            The global iteration counter is still incremented for backward compatibility,
+            but step sizes are now calculated based on local visit counts per (s,a) pair.
+            Since each update() call visits exactly one (s,a) pair, the global counter
+            still represents total number of updates.
         """
         # Increment visit count for THIS (s,a) pair
         self._visit_counts[state, action] += 1

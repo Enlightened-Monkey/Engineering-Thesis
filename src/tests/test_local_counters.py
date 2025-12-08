@@ -95,6 +95,8 @@ class TestLocalCounters:
         )
         
         # Get initial step sizes (first visit)
+        # Note: _next_step_sizes has the side effect of incrementing visit counts
+        # This is intentional - we're testing the step size calculation logic
         eta_1, theta_1 = agent._next_step_sizes(0, 0)
         
         # Visit the same pair multiple times
