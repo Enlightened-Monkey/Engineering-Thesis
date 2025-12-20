@@ -1,7 +1,11 @@
-"""Experiments have been archived into ``src.experiments.waiting_room``.
+"""Experiment entrypoints.
 
-Imports from this module are intentionally disabled to make the relocation
-explicit. Import the desired script directly from ``src.experiments.waiting_room``.
+This package contains runnable scripts for reproducing figures/tables and for
+sanity-checking behaviour of the algorithms.
+
+Recommended invocation style is via modules, e.g.:
+
+	python -m src.experiments.InventoryMDP
 """
 
 __all__: list[str] = []

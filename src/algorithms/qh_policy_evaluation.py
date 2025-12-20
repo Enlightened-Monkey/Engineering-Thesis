@@ -59,7 +59,7 @@ class QHPolicyEvaluation:
                 satisfy ``\theta_n / \eta_n \to 0`` because ``theta_exponent > eta_exponent``.
             min_probability: Numerical floor used in importance weights to avoid
                 division by zero when ``\nu(a\mid s)`` is tiny.
-        """
+        """ 
 
         if not 0.0 <= alpha <= 1.0:
             raise ValueError("alpha must lie in [0, 1].")
@@ -134,6 +134,13 @@ class QHPolicyEvaluation:
         self._iteration += 1
         return eta_n, theta_n
 
+    def _current_stepsizes(self) -> Tuple[float, float]:
+        """Return (eta_n, theta_n) for the current iteration without advancing."""
+
+        eta_n = float(self._eta_schedule(self._iteration))
+        theta_n = float(self._theta_schedule(self._iteration))
+        return eta_n, theta_n
+
     # ------------------------------------------------------------------
     # Core algorithm
     # ------------------------------------------------------------------
@@ -147,6 +154,8 @@ class QHPolicyEvaluation:
         sampling_prob: float,
         mu_prob: float,
         phi_prob: float,
+        eta_n: Optional[float] = None,
+        theta_n: Optional[float] = None,
     ) -> None:
         r"""Apply one iteration of Algorithm 1 for state ``s``.
 
@@ -162,7 +171,14 @@ class QHPolicyEvaluation:
             phi_prob: Continuation probability ``φ_s(a|s)``.
         """
 
-        eta_n, theta_n = self._next_stepsizes()
+        if (eta_n is None) != (theta_n is None):
+            raise ValueError("eta_n and theta_n must be provided together or both omitted.")
+        if eta_n is None:
+            eta_n, theta_n = self._next_stepsizes()
+        else:
+            assert theta_n is not None
+            eta_n = float(eta_n)
+            theta_n = float(theta_n)
 
         r_target = reward - (1.0 - self.alpha) * self.beta * follow_reward + self.beta * self.W[next_state]
 
@@ -184,39 +200,39 @@ class QHPolicyEvaluation:
         phi_policy: PolicyMatrix,
         *,
         n_iterations: int = 1000,
-        initial_state: int = 0,
         rng: Optional[np.random.Generator] = None,
         reference_values: Optional[np.ndarray] = None,
+        reference_kind: str = "W",
         adjust_support: bool = True,
         support_mix: float = 1e-2,
+        # Argumenty poniżej nie są używane w wersji synchronicznej (sweep),
+        # ale zostawiamy je dla kompatybilności sygnatury.
+        initial_state: int = 0,
         reset_on_terminal: bool = True,
         reset_fn: Optional[ResetFn] = None,
         terminal_function: Optional[TerminalFn] = None,
     ) -> Dict[str, np.ndarray]:
-        r"""Execute Algorithm 1 with the provided policies and sampler.
+        r"""Execute Algorithm 1 (Synchronous Sweep Version).
+        
+        This version iterates over ALL states in every iteration, matching the
+        theoretical definition of Algorithm 1 exactly.
 
         Args:
             sampler: Callable returning ``(next_state, reward)`` for ``(state, action)``.
-            sampling_policy: Behaviour policy :math:`ν` as an ``(n_states, n_actions)`` array.
-            mu_policy: Evaluation policy :math:`μ` for the first decision.
+            sampling_policy: Behaviour policy :math:`ν`.
+            mu_policy: Evaluation policy :math:`μ`.
             phi_policy: Continuation policy :math:`φ_s`.
-            n_iterations: Number of stochastic approximation updates to run.
-            initial_state: Starting state for the simulation.
-            rng: Optional NumPy generator for reproducibility.
-            reference_values: Optional exponential value function to monitor
-                ``\|W_n - V^β_{φ_s}\|_2`` each iteration.
-            adjust_support: When ``True`` ensure ``ν`` covers the support of both
-                evaluation policies by injecting their mass where needed.
-            support_mix: Mixing coefficient added from evaluation policies into ``ν``.
-            reset_on_terminal: Whether to draw a fresh state after reaching a terminal state.
-            reset_fn: Optional callable producing the reset state (defaults to ``initial_state``).
-            terminal_function: Optional predicate marking terminal states when the sampler
-                does not return a ``done`` flag.
+            n_iterations: Number of full sweeps over the state space.
+            rng: Optional NumPy generator.
+            reference_values: Optional ground truth for convergence plotting.
+            adjust_support: Ensure sampling coverage.
+            support_mix: Mixing coefficient for support.
 
         Returns:
-            Dictionary containing histories and the final ``W``/``J`` estimates.
+            Dictionary containing final ``W``/``J`` estimates and convergence history.
         """
 
+        # 1. Walidacja i przygotowanie polityk
         nu = self._validate_policy(sampling_policy, "sampling")
         mu = self._validate_policy(mu_policy, "μ")
         phi = self._validate_policy(phi_policy, "φ_s")
@@ -230,59 +246,70 @@ class QHPolicyEvaluation:
 
         rng = np.random.default_rng() if rng is None else rng
         n_actions = nu.shape[1]
-        state = int(initial_state)
 
-        states = np.zeros(n_iterations, dtype=int)
+        # Inicjalizacja historii błędów
         diff_history = None
+        reference: Optional[np.ndarray] = None
         if reference_values is not None:
+            if reference_kind not in {"W", "J"}:
+                raise ValueError("reference_kind must be either 'W' or 'J'.")
             reference = np.asarray(reference_values, dtype=float)
             if reference.shape != (self.n_states,):
                 raise ValueError("reference_values must match (n_states,).")
             diff_history = np.zeros(n_iterations)
 
-        reset_callable: ResetFn = (reset_fn if reset_fn is not None else lambda: initial_state)
-
-        def is_terminal(state_id: int) -> bool:
-            return bool(terminal_function(state_id)) if terminal_function is not None else False
-
+        # 2. GŁÓWNA PĘTLA (Algorytm 1)
+        # In the synchronous sweep setting, we keep (eta_n, theta_n) fixed
+        # across all states within the same outer iteration n.
         for t in range(n_iterations):
-            states[t] = state
-            action = int(rng.choice(n_actions, p=nu[state]))
-            next_state, reward, done = self._sample_transition(sampler, state, action)
+            eta_n, theta_n = self._current_stepsizes()
+            
+            # PĘTLA WEWNĘTRZNA: "for s in S" (Przegląd wszystkich stanów)
+            for state in range(self.n_states):
+                
+                # A. Samplowanie akcji z polityki zachowania (nu) dla konkretnego stanu
+                action = int(rng.choice(n_actions, p=nu[state]))
+                
+                # B. Symulacja kroku (wymuszamy start z 'state')
+                next_state, reward, done = self._sample_transition(sampler, state, action)
 
-            follow_reward = 0.0
-            if not done:
-                follow_action = int(rng.choice(n_actions, p=phi[next_state]))
-                _, follow_reward, _ = self._sample_transition(sampler, next_state, follow_action)
+                # C. Podgląd przyszłości (Look-ahead) dla QH
+                follow_reward = 0.0
+                # W wersji synchronicznej 'done' nie przerywa pętli, ale wpływa na brak nagrody przyszłej
+                if not done:
+                    follow_action = int(rng.choice(n_actions, p=phi[next_state]))
+                    _, follow_reward, _ = self._sample_transition(sampler, next_state, follow_action)
 
-            done = done or is_terminal(next_state)
+                # D. Aktualizacja wag (Update)
+                self.update(
+                    state=state,
+                    action=action,
+                    reward=reward,
+                    next_state=next_state,
+                    follow_reward=follow_reward,
+                    sampling_prob=nu[state, action],
+                    mu_prob=mu[state, action],
+                    phi_prob=phi[state, action],
+                    eta_n=eta_n,
+                    theta_n=theta_n,
+                )
 
-            self.update(
-                state=state,
-                action=action,
-                reward=reward,
-                next_state=next_state,
-                follow_reward=follow_reward,
-                sampling_prob=nu[state, action],
-                mu_prob=mu[state, action],
-                phi_prob=phi[state, action],
-            )
+            # Advance the iteration counter once per sweep.
+            self._iteration += 1
 
-            if diff_history is not None:
-                diff_history[t] = np.linalg.norm(self.W - reference)
+            # 3. Monitorowanie zbieżności (po pełnym przejściu przez wszystkie stany)
+            if diff_history is not None and reference is not None:
+                current = self.W if reference_kind == "W" else self.J
+                diff_history[t] = np.linalg.norm(current - reference)
 
-            if done and reset_on_terminal:
-                state = int(reset_callable())
-            else:
-                state = next_state
-
+        # 4. Zwracanie wyników
         result: Dict[str, np.ndarray] = {
-            "states": states,
             "W": self.W.copy(),
             "J": self.J.copy(),
         }
         if diff_history is not None:
             result["reference_diff"] = diff_history
+            
         return result
 
     # ------------------------------------------------------------------
