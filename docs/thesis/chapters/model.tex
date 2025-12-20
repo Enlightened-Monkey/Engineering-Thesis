@@ -1,0 +1,138 @@
+\chapter{Model}
+
+\section{Markowskie procesy decyzyjne}
+
+Model markowskiego procesu decyzyjnego (MDP) z dyskontowaniem quasi-hiperbolicznym jest zdefiniowany jako: $M = (S, A, q, r, \alpha, \beta)$, gdzie:
+
+\begin{itemize}
+\item $S$ -- zbiór stanów,
+\item $A$ -- zbiór akcji,
+\item $q(s' \mid s,a)$ -- prawdopodobieństwo przejścia ze stanu $s$ do stanu $s'$ przy akcji $a$,
+\item $r : S \times A \rightarrow \mathbb{R}$ -- funkcja nagrody,
+\item $\alpha > 0$ -- parametr wzmacniający wagę nagród natychmiastowych,
+\item $\beta \in [0,1)$ -- standardowy współczynnik dyskontowania wykładniczego.
+\end{itemize}
+
+\subsection{Przestrzenie pomocnicze}
+
+Oznaczmy przez:
+\begin{enumerate}
+\item $\Pr(A)$ -- zbiór miar probabilistycznych na $A$; dla skończonego $A$ utożsamiamy z $\mathbb{R}^{|A|}$.
+\item $\mathcal{H}_n$ -- historie długości $n$: $h_n = (s_0, a_0, s_1, a_1, \ldots, s_n)$, przy czym $h_0 = s_0$.
+\end{enumerate}
+
+Historia gromadzi pełen kontekst interakcji agent--środowisko do czasu $n$.
+
+\subsection{Polityki decyzyjne}
+
+\begin{enumerate}
+\item Ogólna polityka: $\phi = (\phi_0, \phi_1, \ldots)$, gdzie $\phi_n : \mathcal{H}_n \rightarrow \Pr(A)$ określa rozkład akcji dla każdej historii $h_n \in \mathcal{H}_n$, $n \in \mathbb{N} \cup \{0\} = \mathbb{N}_0$.
+\item Polityki markowskie: zależne od stanu i czasu, $\phi_n : S \rightarrow \Pr(A)$.
+\item Polityki stacjonarne: zależne tylko od stanu, $\phi_s : S \rightarrow \Pr(A)$; będziemy oznaczać je przez $\phi_s$.
+\end{enumerate}
+
+Zbiory polityk:
+\begin{itemize}
+\item $\Phi$ -- zbiór wszystkich polityk zależnych od historii,
+\item $\Phi_m$ -- zbiór polityk markowskich,
+\item $\Phi_s$ -- zbiór polityk stacjonarnych.
+\end{itemize}
+
+\subsection{Funkcja wypłaty}
+
+Rozważamy oczekiwaną wypłatę w nieskończonym horyzoncie czasowym z dyskontowaniem quasi-hiperbolicznym. Współczynniki w kolejnych okresach wynoszą 1, $\alpha \beta$, $\alpha \beta^2$, $\alpha \beta^3$, \ldots.
+
+Wypłata dyskontowana w nieskończonym horyzoncie czasowym dla polityki $\phi \in \Phi$ i stanu początkowego $s_0$ jest dana wyrażeniem
+\begin{align}
+    J_{\phi}^{\alpha,\beta}(s_0)
+    &= \mathbb{E}_{\substack{a_0 \sim \phi_0(\cdot \mid s_0) \\ s' \sim q(\cdot \mid s_0,a_0)}}
+      \left[ r(s_0,a_0) + \alpha\,\beta\, J_\phi^{\beta}(s') \right] \nonumber \\
+    &= \sum_a \phi_0(a \mid s_0) \left[ r(s_0,a) + \alpha\,\beta\, \sum_{s'} q(s' \mid s_0,a) J_\phi^{\beta}(s') \right],
+\label{eq:qh-return}
+\end{align}
+gdzie $\overrightarrow{\phi} = (\phi_1, \phi_2, \ldots)$, a $J_{\phi}^{\beta}(s')$ oznacza standardową wypłatę oczekiwaną z dyskontowaniem wykładniczym
+\begin{equation}
+J_\phi^{\beta}(s') = \sum_{n=1}^{\infty} \beta^{n-1} \; r^{(n)}(s', \overrightarrow{\phi}).
+\label{eq:beta-value}
+\end{equation}
+
+\section{Quasi-hiperboliczne dyskontowanie}
+
+Dyskontowanie quasi-hiperboliczne jest zadane przez: $d(0) = 1$, a dla $t \ge 1$ mamy $d(t) = \alpha\,\beta^t$.
+
+W przeciwieństwie do wykładniczego dyskontowania, gdzie $d(t) = \gamma^t$, dyskontowanie quasi-hiperboliczne lepiej modeluje preferencje niespójne w czasie. Parametr $\alpha$ wprowadza uprzedzenie teraźniejszości (ang. \textit{present bias}), co powoduje, że decydent relatywnie bardziej ceni nagrody natychmiastowe w porównaniu z przyszłymi.
+
+\subsection{Przykład z jabłkiem}
+
+Rozważmy prosty przykład decyzji dotyczącej konsumpcji jabłka. Załóżmy, że mamy następującą sytuację:
+
+\begin{itemize}
+\item W dniu $t=0$ możemy wybrać między zjedzeniem małego jabłka dziś lub dużego jabłka za tydzień.
+\item Małe jabłko daje zadowolenie o wartości $r_1 = 5$ jednostek.
+\item Duże jabłko daje zadowolenie o wartości $r_2 = 10$ jednostek.
+\item Parametry dyskontowania: $\alpha = 0.8$, $\beta = 0.95$.
+\end{itemize}
+
+\textbf{Przy dyskontowaniu wykładniczym} ($d(t) = \beta^t$):
+\begin{itemize}
+\item Wartość małego jabłka dzisiaj: $5 \cdot \beta^0 = 5$
+\item Wartość dużego jabłka za tydzień: $10 \cdot \beta^7 \approx 6.98$
+\item Decydent wybiera duże jabłko za tydzień.
+\end{itemize}
+
+\textbf{Przy dyskontowaniu quasi-hiperbolicznym} ($d(0) = 1$, $d(t) = \alpha\beta^t$ dla $t \geq 1$):
+\begin{itemize}
+\item Wartość małego jabłka dzisiaj: $5 \cdot 1 = 5$
+\item Wartość dużego jabłka za tydzień: $10 \cdot \alpha\beta^7 = 10 \cdot 0.8 \cdot 0.95^7 \approx 5.58$
+\item Decydent może wybrać duże jabłko, ale wybór jest mniej oczywisty.
+\end{itemize}
+
+\textbf{Niespójność czasowa:} Załóżmy, że minął tydzień i teraz stoimy przed wyborem między małym jabłkiem dziś a dużym za kolejny tydzień. Przy dyskontowaniu quasi-hiperbolicznym ponownie obliczamy:
+\begin{itemize}
+\item Wartość małego jabłka dzisiaj: $5 \cdot 1 = 5$
+\item Wartość dużego jabłka za tydzień: $10 \cdot 0.8 \cdot 0.95^7 \approx 5.58$
+\end{itemize}
+
+Zauważmy, że relatywne wartości są takie same jak tydzień temu, ponieważ uprzedzenie teraźniejszości $\alpha$ zawsze faworyzuje nagrodę natychmiastową.
+
+\subsection{Przykład z podjęciem decyzji natychmiastowego zakupu}
+
+Rozważmy decyzję zakupową w sklepie internetowym:
+
+\begin{itemize}
+\item Produkt kosztuje 1000 zł.
+\item Mamy dwie opcje:
+  \begin{itemize}
+  \item Opcja A: Kupić teraz i zapłacić pełną cenę 1000 zł.
+  \item Opcja B: Czekać miesiąc na promocję i zapłacić 800 zł.
+  \end{itemize}
+\item Użyteczność z posiadania produktu: 100 jednostek na miesiąc.
+\item Koszt pieniężny: utrata użyteczności proporcjonalna do wydanej kwoty.
+\end{itemize}
+
+\textbf{Analiza decyzji:}
+
+Niech $\alpha = 0.7$, $\beta = 0.98$ (dyskontowanie dzienne, przeskalowane na miesiąc: $\beta^{30} \approx 0.545$).
+
+\textbf{Opcja A (kupno natychmiastowe):}
+\begin{itemize}
+\item Koszt: $-1000$ jednostek dzisiaj
+\item Korzyść: $100$ jednostek miesięcznie przez wiele miesięcy
+\item Wartość netto w pierwszym miesiącu: $-1000 + 100 = -900$
+\item Wartość w następnych miesiącach: $\alpha \beta^{30} \cdot 100 + \alpha \beta^{60} \cdot 100 + \ldots$
+\end{itemize}
+
+\textbf{Opcja B (czekaj na promocję):}
+\begin{itemize}
+\item Koszt za miesiąc: $\alpha \beta^{30} \cdot (-800) \approx -304$
+\item Korzyść od drugiego miesiąca: $\alpha \beta^{60} \cdot 100 + \alpha \beta^{90} \cdot 100 + \ldots$
+\end{itemize}
+
+Decydent z quasi-hiperbolicznym dyskontowaniem może wybrać opcję A (kupno natychmiastowe), mimo że opcja B jest ekonomicznie bardziej korzystna, ponieważ uprzedzenie teraźniejszości $\alpha < 1$ znacząco zmniejsza wartość przyszłych korzyści.
+
+\textbf{Implikacje:}
+\begin{itemize}
+\item Decydent wykładniczy ($\alpha = 1$) wybrałby racjonalnie opcję B.
+\item Decydent quasi-hiperboliczny ($\alpha < 1$) może ulec impulsowi i wybrać opcję A.
+\item To wyjaśnia zjawiska takie jak zakupy impulsowe, nadmierne korzystanie z kart kredytowych, czy trudności z oszczędzaniem.
+\end{itemize}

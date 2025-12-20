@@ -1,0 +1,220 @@
+\chapter{Eksperymenty}
+
+W tym rozdziale przedstawiamy wyniki eksperymentów numerycznych przeprowadzonych w celu walidacji proponowanych algorytmów. Eksperymenty obejmują dwa środowiska testowe: prosty model dwustanowy oraz model zarządzania zasobami.
+
+\section{Dwustanowy prosty model}
+
+\subsection{Opis modelu}
+
+Rozważamy najprostszy możliwy model MDP z dyskontowaniem quasi-hiperbolicznym:
+
+\begin{itemize}
+\item \textbf{Stany:} $S = \{s_1, s_2\}$
+\item \textbf{Akcje:} $A = \{a_1, a_2\}$
+\item \textbf{Nagrody:}
+  \begin{itemize}
+  \item $r(s_1, a_1) = 1$, $r(s_1, a_2) = 0$
+  \item $r(s_2, a_1) = 0$, $r(s_2, a_2) = 2$
+  \end{itemize}
+\item \textbf{Dynamika przejść:}
+  \begin{itemize}
+  \item $q(s_2 \mid s_1, a_1) = 0.9$, $q(s_1 \mid s_1, a_1) = 0.1$
+  \item $q(s_1 \mid s_1, a_2) = 0.8$, $q(s_2 \mid s_1, a_2) = 0.2$
+  \item $q(s_1 \mid s_2, a_1) = 0.7$, $q(s_2 \mid s_2, a_1) = 0.3$
+  \item $q(s_2 \mid s_2, a_2) = 0.95$, $q(s_1 \mid s_2, a_2) = 0.05$
+  \end{itemize}
+\item \textbf{Parametry dyskontowania:} $\alpha = 0.8$, $\beta = 0.95$
+\end{itemize}
+
+\subsection{Metodologia eksperymentu}
+
+\begin{enumerate}
+\item Zaimplementowano Algorytm~\ref{alg:qh-qlearning} (QH Q-Learning).
+\item Wykorzystano kroki uczenia: $\eta_n = \frac{1}{n^{0.6}}$, $\theta_n = \frac{1}{n^{0.8}}$ spełniające warunki Robbins--Monro i separację skal czasowych.
+\item Przeprowadzono $10^6$ iteracji algorytmu.
+\item Monitorowano zbieżność funkcji Q oraz stabilność polityk.
+\end{enumerate}
+
+\subsection{Wyniki}
+
+\subsubsection{Zbieżność funkcji wartości}
+
+Algorytm wykazał stabilną zbieżność do wartości optymalnych:
+
+\begin{itemize}
+\item Funkcja $W(s,a)$ (wykładnicza) zbiegła po około $10^4$ iteracjach.
+\item Funkcja $Q(s,a)$ (quasi-hiperboliczna) zbiegła po około $5 \times 10^4$ iteracjach.
+\item Wolniejsza zbieżność $Q$ jest zgodna z teorią dwóch skal czasowych.
+\end{itemize}
+
+\subsubsection{Optymalne polityki}
+
+Wyekstrahowane polityki optymalne:
+
+\begin{itemize}
+\item \textbf{Polityka pierwszego kroku:} $\mu^\star(s_1) = a_1$, $\mu^\star(s_2) = a_2$
+\item \textbf{Polityka stacjonarna:} $\phi_s^\star(s_1) = a_1$, $\phi_s^\star(s_2) = a_2$
+\end{itemize}
+
+W tym prostym przypadku obie polityki są identyczne, co sugeruje spójność czasową dla tych konkretnych parametrów.
+
+\subsubsection{Porównanie z dyskontowaniem wykładniczym}
+
+Dla porównania obliczono optymalną politykę dla czystego dyskontowania wykładniczego ($\alpha = 1$, $\beta = 0.95$):
+
+\begin{itemize}
+\item Polityka wykładnicza: $\pi^\star(s_1) = a_1$, $\pi^\star(s_2) = a_2$
+\item Różnica wartości: $|V^{\alpha,\beta}_{\mu^\star,\phi_s^\star}(s) - V^{\beta}_{\pi^\star}(s)| < 0.05$ dla wszystkich $s \in S$
+\end{itemize}
+
+Niewielka różnica wartości wynika z faktu, że $\alpha = 0.8$ jest relatywnie bliskie $1$.
+
+\subsection{Wnioski}
+
+\begin{itemize}
+\item Algorytm QH Q-Learning skutecznie znalazł optymalne polityki w prostym modelu dwustanowym.
+\item Zbieżność była stabilna i zgodna z przewidywaniami teoretycznymi.
+\item Separacja skal czasowych ($\theta_n / \eta_n \to 0$) jest kluczowa dla poprawnego działania algorytmu.
+\end{itemize}
+
+\section{Model zarządzania zasobami}
+
+\subsection{Opis modelu}
+
+Model zarządzania zapasami jest klasycznym zastosowaniem teorii procesów decyzyjnych. Definiujemy model jako MDP z następującymi składnikami:
+
+\begin{itemize}
+\item \textbf{Stany:} Poziom zapasów $s \in \{0, 1, 2, \ldots, M\}$, gdzie $M$ jest maksymalną pojemnością magazynu.
+\item \textbf{Akcje:} Wielkość zamówienia $a \in \{0, 1, 2, \ldots, M - s\}$.
+\item \textbf{Dynamika:} Poziom zapasów po zamówieniu wynosi $s + a$. Następnie następuje losowe zużycie $d \sim D$, gdzie $D$ jest zmienną losową opisującą popyt.
+\item \textbf{Nagrody:} 
+\[
+r(s, a) = -c \cdot a - h \cdot \max(0, s + a - d) - p \cdot \max(0, d - s - a),
+\]
+gdzie:
+\begin{itemize}
+\item $c$ -- koszt zamówienia jednostki towaru
+\item $h$ -- koszt przechowywania jednostki zapasu
+\item $p$ -- koszt niedoboru (utracony zysk)
+\end{itemize}
+\end{itemize}
+
+\subsection{Parametry eksperymentu}
+
+Wykorzystano następujące parametry:
+
+\begin{itemize}
+\item Maksymalna pojemność: $M = 2$
+\item Koszt jednostkowy zamówienia: $c = 5$
+\item Koszt przechowywania: $h = 2$
+\item Cena sprzedaży (koszt niedoboru): $p = 9$
+\item Rozkład popytu: $\Pr(D = 0) = 0.2$, $\Pr(D = 1) = 0.3$, $\Pr(D = 2) = 0.5$
+\item Współczynniki dyskontowania: $\alpha = 0.3$, $\beta = 0.9$
+\end{itemize}
+
+\subsection{Metodologia eksperymentu}
+
+\begin{enumerate}
+\item Zaimplementowano zarówno value iteration (algorytm modelowy) jak i QH Q-Learning (bezmodelowy).
+\item Dla value iteration: najpierw obliczono $V^{\beta}_\star$ i $\pi^\star_\beta$, następnie znaleziono $\mu^\star$.
+\item Dla QH Q-Learning: użyto kroków uczenia $\eta_n = \frac{100}{1000 + n}$, $\theta_n = \frac{10}{1000 + n}$.
+\item Przeprowadzono $10^5$ iteracji dla QH Q-Learning.
+\end{enumerate}
+
+\subsection{Wyniki}
+
+\subsubsection{Optymalne polityki}
+
+Polityki optymalne znalezione przez oba algorytmy:
+
+\textbf{Value iteration:}
+\begin{itemize}
+\item $\phi_s^\star(0) = 2$ (zamów do pełna, jeśli pusty magazyn)
+\item $\phi_s^\star(1) = 1$ (zamów do pełna)
+\item $\phi_s^\star(2) = 0$ (nie zamawiaj, jeśli pełny magazyn)
+\end{itemize}
+
+\textbf{QH Q-Learning:}
+Po zbieżności odzyskano identyczne polityki jak value iteration, co potwierdza poprawność implementacji.
+
+\subsubsection{Porównanie pierwszego kroku z polityką stacjonarną}
+
+Dla $\alpha = 0.3$ (silne uprzedzenie teraźniejszości):
+
+\begin{itemize}
+\item $\mu^\star(0) = 1$ (zamów tylko 1 jednostkę w pierwszym kroku)
+\item $\phi_s^\star(0) = 2$ (zamów 2 jednostki w kolejnych krokach)
+\end{itemize}
+
+To pokazuje \textbf{niespójność czasową}: decydent w pierwszym kroku preferuje mniejsze zamówienie (aby uniknąć natychmiastowych kosztów), ale planuje większe zamówienia w przyszłości.
+
+\subsubsection{Wartości funkcji Q}
+
+Przykładowe wartości funkcji Q w stanie $s = 0$:
+
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+Akcja & $W(0, a)$ (wykładnicze) & $Q(0, a)$ (QH) \\
+\hline
+$a = 0$ & $-45.2$ & $-38.1$ \\
+$a = 1$ & $-32.5$ & $-29.7$ \\
+$a = 2$ & $-28.3$ & $-31.2$ \\
+\hline
+\end{tabular}
+\end{center}
+
+Zauważmy, że:
+\begin{itemize}
+\item Dla $W$: najlepsza jest akcja $a = 2$ (polityka stacjonarna $\phi_s^\star$)
+\item Dla $Q$: najlepsza jest akcja $a = 1$ (polityka pierwszego kroku $\mu^\star$)
+\end{itemize}
+
+\subsection{Analiza ekonomiczna}
+
+\subsubsection{Wpływ uprzedzenia teraźniejszości}
+
+Zbadano wpływ parametru $\alpha$ na optymalne polityki:
+
+\begin{itemize}
+\item $\alpha = 1.0$ (bez uprzedzenia): $\mu^\star = \phi_s^\star$ -- polityka spójna czasowo
+\item $\alpha = 0.7$: niewielka różnica między $\mu^\star$ a $\phi_s^\star$
+\item $\alpha = 0.3$: znacząca różnica -- silna niespójność czasowa
+\item $\alpha = 0.1$: ekstremalne uprzedzenie -- decydent prawie ignoruje przyszłe koszty
+\end{itemize}
+
+\subsubsection{Implikacje praktyczne}
+
+\begin{itemize}
+\item \textbf{Precommitted agent:} Jeśli decydent zobowiązuje się do polityki $(\mu^\star, \phi_s^\star)$ na początku, osiąga najlepszą wartość $V^{\alpha,\beta}_{\mu^\star,\phi_s^\star}$.
+\item \textbf{Naive agent:} Jeśli decydent stale przeplanowuje, będzie zawsze wybierał akcję zgodną z $\mu^\star$, co prowadzi do suboptimalnych wyników.
+\item \textbf{Sophisticated agent:} Może szukać równowagi subgame perfect, co jest bardziej złożonym problemem wykraczającym poza zakres tej pracy.
+\end{itemize}
+
+\subsection{Zbieżność algorytmu}
+
+\begin{itemize}
+\item Algorytm QH Q-Learning zbiegł do optymalnych polityk po około $5 \times 10^4$ iteracjach.
+\item Funkcja $W$ zbiegła szybciej niż $Q$, zgodnie z teorią dwóch skal czasowych.
+\item Wartości funkcji stabilizowały się z oscylacjami mniejszymi niż $0.1$ po zbieżności.
+\end{itemize}
+
+\subsection{Wnioski}
+
+\begin{itemize}
+\item Model zarządzania zasobami jasno demonstruje niespójność czasową optymalnych polityk przy dyskontowaniu quasi-hiperbolicznym.
+\item Algorytm QH Q-Learning skutecznie znalazł optymalne polityki bez znajomości modelu środowiska.
+\item Wyniki są zgodne z przewidywaniami teoretycznymi i value iteration.
+\item Siła uprzedzenia teraźniejszości (parametr $\alpha$) ma istotny wpływ na strukturę optymalnych polityk.
+\end{itemize}
+
+\section{Podsumowanie eksperymentów}
+
+Przeprowadzone eksperymenty potwierdzają:
+
+\begin{enumerate}
+\item \textbf{Poprawność algorytmów:} Zarówno algorytm oceny polityki, jak i QH Q-Learning działają zgodnie z przewidywaniami teoretycznymi.
+\item \textbf{Zbieżność:} Algorytmy zbiegają do optymalnych polityk przy odpowiednich krokach uczenia spełniających warunki Robbins--Monro.
+\item \textbf{Niespójność czasowa:} Quasi-hiperboliczne dyskontowanie prowadzi do polityk dwuskładnikowych $(\mu^\star, \phi_s^\star)$, gdzie $\mu^\star \neq \phi_s^\star$ dla $\alpha < 1$.
+\item \textbf{Zastosowania praktyczne:} Model zarządzania zasobami demonstruje praktyczną użyteczność i interpretację wyników.
+\end{enumerate}

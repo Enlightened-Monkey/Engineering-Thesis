@@ -1,0 +1,88 @@
+\chapter{Wnioski i podsumowanie}
+
+\section{Podsumowanie wyników}
+
+W niniejszej pracy przedstawiliśmy kompleksowe podejście do algorytmów uczenia ze wzmocnieniem w markowskich procesach decyzyjnych z dyskontowaniem quasi-hiperbolicznym. Główne osiągnięcia obejmują:
+
+\begin{itemize}
+\item Sformułowanie modelu MDP z quasi-hiperbolicznym dyskontowaniem
+\item Udowodnienie struktury optymalnych polityk jako par $(\mu^\star, \phi_s^\star)$
+\item Przedstawienie pięciu kluczowych twierdzeń zapewniających istnienie i zbieżność optymalnych polityk
+\item Opracowanie dwóch algorytmów bezmodelowych: oceny polityki i QH Q-Learning
+\item Demonstrację działania algorytmów na modelach testowych
+\end{itemize}
+
+\section{Główne wyniki teoretyczne}
+
+Praca dostarcza następujących wyników teoretycznych:
+
+\begin{enumerate}
+\item \textbf{Twierdzenie o redukcji polityk:} Każdą politykę zależną od historii można zredukować do polityki dwuskładnikowej $(\mu, \phi_s)$.
+\item \textbf{Lemat o kontrakcji:} Operator Bellmana dla polityki stacjonarnej jest kontrakcją z faktorem $\beta$.
+\item \textbf{Twierdzenie o zbieżności polityk:} Iteracje wartości zbiegają wykładniczo szybko do wartości optymalnej.
+\item \textbf{Twierdzenie o istnieniu optymalnej polityki deterministycznej:} Istnieje deterministyczna optymalna para polityk.
+\item \textbf{Twierdzenie o zbieżności QH Q-Learning:} Algorytm QH Q-Learning zbiega prawie na pewno do optymalnych polityk przy odpowiednich warunkach na kroki uczenia.
+\end{enumerate}
+
+\section{Wkład praktyczny}
+
+Z praktycznego punktu widzenia praca dostarcza:
+
+\begin{itemize}
+\item Algorytmy bezmodelowe działające bez znajomości dynamiki środowiska
+\item Metody implementacji wykorzystujące aproksymację stochastyczną o dwóch skalach czasowych
+\item Demonstrację zastosowania w modelu zarządzania zasobami
+\item Narzędzia do modelowania decyzji z uprzedzeniem teraźniejszości
+\end{itemize}
+
+\section{Niespójność czasowa}
+
+Kluczowym odkryciem jest demonstracja niespójności czasowej w optymalnych politykach:
+
+\begin{itemize}
+\item Dla $\alpha < 1$ optymalna reguła pierwszego kroku $\mu^\star$ różni się od optymalnej polityki stacjonarnej $\phi_s^\star$
+\item Decydent zobowiązany (precommitted agent) osiąga lepsze wyniki niż decydent naiwny stale przeplanowujący
+\item Zjawisko to ma istotne implikacje dla zrozumienia zachowań ludzkich i projektowania systemów decyzyjnych
+\end{itemize}
+
+\section{Ograniczenia}
+
+Przedstawione podejście ma następujące ograniczenia:
+
+\begin{itemize}
+\item Ograniczenie do przypadku decydenta zobowiązanego
+\item Założenie o skończonych przestrzeniach stanów i akcji
+\item Brak rozważenia przypadków częściowo obserwowalnych
+\item Ograniczenie do prostych modeli testowych
+\end{itemize}
+
+\section{Kierunki dalszych badań}
+
+Przyszłe badania mogą obejmować:
+
+\begin{itemize}
+\item \textbf{Rozszerzenie na POMDP:} Częściowo obserwowalne procesy decyzyjne z quasi-hiperbolicznym dyskontowaniem
+\item \textbf{Systemy wieloagentowe:} Interakcje strategiczne między agentami z preferencjami czasowo-niespójnymi
+\item \textbf{Ciągłe przestrzenie:} Aproksymacja funkcji z wykorzystaniem sieci neuronowych
+\item \textbf{Sophisticated agents:} Równowagi subgame perfect dla decydentów świadomych swojej niespójności
+\item \textbf{Estymacja parametrów:} Metody uczenia parametrów $\alpha$ i $\beta$ z danych
+\item \textbf{Walidacja empiryczna:} Testy z udziałem ludzi w eksperymentach behawioralnych
+\end{itemize}
+
+\section{Znaczenie praktyczne}
+
+Wyniki pracy mają istotne znaczenie dla zastosowań w:
+
+\begin{itemize}
+\item \textbf{Ekonomia behawioralna:} Modelowanie decyzji oszczędnościowych i konsumpcyjnych
+\item \textbf{Zarządzanie zasobami:} Optymalizacja zapasów z uwzględnieniem ludzkiego czynnika
+\item \textbf{Systemy rekomendacyjne:} Balansowanie natychmiastowej satysfakcji z długoterminową wartością
+\item \textbf{Finanse:} Planowanie inwestycji i emerytur z uprzedzeniem teraźniejszości
+\item \textbf{Opieka zdrowotna:} Zrozumienie przestrzegania długoterminowych terapii
+\end{itemize}
+
+\section{Zakończenie}
+
+Niniejsza praca stanowi wkład w teorię i praktykę uczenia ze wzmocnieniem poprzez systematyczne zbadanie markowskich procesów decyzyjnych z quasi-hiperbolicznym dyskontowaniem. Przedstawione algorytmy bezmodelowe wraz z gwarancjami teoretycznymi otwierają nowe możliwości zastosowań w dziedzinach wymagających modelowania realistycznych preferencji czasowych decydentów.
+
+Kluczowa innowacja polega na pokazaniu, że złożone polityki niestacjonarne można sprowadzić do eleganckich struktur dwuskładnikowych, co czyni zarówno analizę teoretyczną, jak i implementację praktyczną wykonalnymi. Demonstracja na modelu zarządzania zasobami potwierdza użyteczność proponowanego podejścia w rzeczywistych zastosowaniach.
