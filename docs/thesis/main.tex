@@ -69,16 +69,32 @@ Niestety taka polityka nie będzie spójna czasowo.}
 \mainmatter
 \cleardoublepage
 
-\include{chapters/introduction}
+% 1. Wstęp (pusty)
+\include{chapters/introduction_empty}
 \cleardoublepage
-\include{chapters/literature_review}
-\cleardoublepage
-\include{chapters/theoretical_framework}
-\cleardoublepage
-\include{chapters/algorithms}
 
+% 2. Model
+\include{chapters/model}
+\cleardoublepage
+
+% 3. Główne twierdzenia
+\include{chapters/main_theorems}
+\cleardoublepage
+
+% 4. Algorytmy
+\include{chapters/algorithms_simplified}
+\cleardoublepage
+
+% 5. Eksperymenty
+\include{chapters/experiments_simplified}
+\cleardoublepage
+
+% 6. Wnioski/Podsumowanie
+\include{chapters/conclusion_simplified}
+\cleardoublepage
+
+% 7. Bibliografia
 \bibliographystyle{plain}
 \bibliography{bibliography/references}
-
 
 \end{document}
