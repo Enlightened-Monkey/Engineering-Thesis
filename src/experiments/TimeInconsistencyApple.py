@@ -1,5 +1,44 @@
-import numpy as np
+from pathlib import Path
+
 import matplotlib.pyplot as plt
+import numpy as np
+
+
+ROOT = Path(__file__).resolve().parent.parent
+OUTPUT_DIR = ROOT / "data" / "plots"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+PALETTE = {
+    "exp": "#0b84a5",
+    "qh": "#ca472f",
+    "accent": "#f6c85f",
+}
+
+
+def set_plot_style():
+    """Applies a clean, publication-ready style."""
+    plt.rcParams.update({
+        "figure.figsize": (10, 6),
+        "axes.facecolor": "#f7f9fc",
+        "figure.facecolor": "#f7f9fc",
+        "axes.edgecolor": "#d0d7e2",
+        "axes.linewidth": 1.0,
+        "axes.grid": True,
+        "grid.color": "#dbe3ef",
+        "grid.linestyle": "--",
+        "grid.linewidth": 0.8,
+        "xtick.color": "#2f3440",
+        "ytick.color": "#2f3440",
+        "axes.labelcolor": "#2f3440",
+        "font.size": 12,
+        "legend.frameon": True,
+        "legend.facecolor": "#ffffff",
+        "legend.edgecolor": "#d0d7e2",
+        "legend.framealpha": 0.9,
+    })
+
+
+set_plot_style()
 
 
 def qh_value(reward, delay, alpha, beta):
@@ -65,16 +104,16 @@ value_qh = [qh_value(1.0, t, alpha, beta) for t in T]
 value_exp = [exp_value(1.0, t, beta) for t in T]
 
 plt.figure(figsize=(9, 5))
-plt.plot(T, value_exp, label='Wykładnicze (beta)', color='blue', linewidth=2)
-plt.plot(T, value_qh, label='QH (alpha, beta)', color='orange', linewidth=2)
-plt.scatter([0], [value_qh[0]], color='orange', zorder=5)
+plt.plot(T, value_exp, label='Wykładnicze (β)', color=PALETTE["exp"], linewidth=2.4, linestyle='--')
+plt.plot(T, value_qh, label='Quasi-hiperboliczne (α, β)', color=PALETTE["qh"], linewidth=2.4, linestyle='-')
 plt.title('Krzywe dyskontowania: wykładnicze vs quasi-hiperboliczne')
 plt.xlabel('Opóźnienie (dni)')
 plt.ylabel('Zdyskontowana wartość nagrody 1')
+plt.ylim(0, 1.05)
 plt.grid(True, alpha=0.3)
 plt.legend()
 plt.tight_layout()
-plt.savefig('discount_curves.png', dpi=150)
+plt.savefig(OUTPUT_DIR / 'discount_curves.png', dpi=400, bbox_inches='tight')
 
 
 # --- Wykres słupkowy: wygrane opcje ---
@@ -91,19 +130,18 @@ for ax, model in zip(axes, ["QH", "EXP"]):
             choice = r["exp_choice"]
 
         x0 = i * 2
-        colors = ['green', 'blue']
-        labels = ['1 jabłko', '2 jabłka']
-        ax.bar([x0 - bar_width/2, x0 + bar_width/2], vals, width=bar_width, color=colors, alpha=0.7)
+        colors = [PALETTE["accent"], PALETTE["exp"] if model == "EXP" else PALETTE["qh"]]
+        ax.bar([x0 - bar_width/2, x0 + bar_width/2], vals, width=bar_width, color=colors, alpha=0.8, edgecolor='#ffffff')
         ax.text(x0 - bar_width/2, vals[0] + 0.02, f"{vals[0]:.2f}", ha='center', va='bottom', fontsize=8)
         ax.text(x0 + bar_width/2, vals[1] + 0.02, f"{vals[1]:.2f}", ha='center', va='bottom', fontsize=8)
-        ax.text(x0, max(vals) + 0.1, f"Wygrywa: {choice}", ha='center', va='bottom', fontsize=9, fontweight='bold')
+        ax.text(x0, max(vals) + 0.12, f"Wygrywa: {choice}", ha='center', va='bottom', fontsize=9, fontweight='bold', color='#2f3440')
         ax.set_xticks([i * 2 for i in range(len(rows))])
         ax.set_xticklabels([r['scenario'] for r in rows], rotation=12)
     ax.set_title(f"Model: {model}")
     ax.set_ylabel('Postrzegana wartość')
     ax.set_ylim(0, max(max(r['qh_small'], r['qh_large'], r['exp_small'], r['exp_large']) for r in rows) + 0.5)
-    ax.grid(True, axis='y', alpha=0.2)
+    ax.grid(True, axis='y', alpha=0.3)
 
 fig.suptitle('Porównanie wyborów: QH vs Wykładniczy')
 fig.tight_layout(rect=(0, 0.02, 1, 0.96))
-plt.savefig('choices_bar.png', dpi=150)
+plt.savefig(OUTPUT_DIR / 'choices_bar.png', dpi=400, bbox_inches='tight')

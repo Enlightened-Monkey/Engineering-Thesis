@@ -6,11 +6,36 @@ Przedstawiamy metodologię przeprowadzanych eksperymentów numerycznych mającyc
 
 \section{Środowiska testowe}
 
-\subsection{GridWorld}
-Klasyczny problem nawigacji w siatce z przeszkodami.
+\subsection{Dwustanowy MDP z dyskontowaniem quasi-hiperbolicznym}
 
-\subsection{Chain Walk}
-Problem przechodzenia po łańcuchu stanów z różnymi nagrodami.
+Głównym środowiskiem testowym jest prosty dwustanowy markowski proces decyzyjny, który modeluje konflikt między nagrodami natychmiastowymi a przyszłymi. Model ten wyraźnie ilustruje wpływ niespójności czasowej (present bias) na wybór optymalnej polityki.
+
+\subsubsection{Definicja modelu}
+
+Rozpatrujemy MDP $M = (S, A, q, r, \alpha, \beta)$ z:
+\begin{itemize}
+\item Przestrzeni stanów: $S = \{1, 2\}$
+\item Przestrzeni akcji: $A = \{a_1, a_2\}$
+\item Funkcja nagrody: $r(1, a_1) = 0$, $r(1, a_2) = 2$, $r(2, a_1) = 5$, $r(2, a_2) = 20$
+\item Przejścia:
+\begin{align}
+q(2 \mid 1, a_1) &= 1.0 \quad \text{(deterministyczne)} \\
+q(1 \mid 1, a_2) &= 0.5, \quad q(2 \mid 1, a_2) = 0.5 \\
+q(1 \mid 2, a_1) &= 0.5, \quad q(2 \mid 2, a_1) = 0.5 \\
+q(1 \mid 2, a_2) &= 0.5, \quad q(2 \mid 2, a_2) = 0.5
+\end{align}
+\end{itemize}
+
+\subsubsection{Interpretacja}
+
+Model ilustruje klasyczną niespójność czasową: w stanie 1 akcja $a_1$ prowadzi deterministycznie do stanu 2 (gdzie czekają duże nagrody), podczas gdy $a_2$ daje małą nagrodę natychmiast. Dla agenta niezaangażowanego (present-biased) akcja $a_2$ może być bardziej atrakcyjna ze względu na natychmiastową nagrodę.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.7\textwidth]{fig/schematRL.png}
+    \caption{Struktura dwustanowego MDP: stany (1, 2), akcje ($a_1, a_2$), nagrody i przejścia probabilistyczne.}
+    \label{fig:two-state-mdp}
+\end{figure}
 
 \section{Metryki oceny}
 
