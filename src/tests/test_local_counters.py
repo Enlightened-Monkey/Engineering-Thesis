@@ -1,8 +1,8 @@
-"""
-Test for local count-based step sizes in QH Q-Learning.
+"""Tests for visit counters and global step sizes in QH Q-Learning.
 
-This test validates that step sizes are calculated independently for each
-state-action pair, ensuring rarely-visited pairs get adequate learning opportunities.
+The implementation tracks local visit counts per (s,a) pair for diagnostics and
+persistence, but step sizes follow a GLOBAL Robbins--Monro schedule driven by the
+total iteration count (matching `qh_policy_evaluation.py`).
 """
 
 import pytest
@@ -17,7 +17,7 @@ from algorithms.qh_qlearning import QHQLearning
 
 
 class TestLocalCounters:
-    """Test cases for local count-based step sizes."""
+    """Test cases for visit counts and step-size schedule."""
     
     def test_visit_counts_initialization(self):
         """Test that visit counts are initialized to zeros."""
@@ -52,8 +52,8 @@ class TestLocalCounters:
         assert agent._visit_counts[0, 0] == 3
         assert agent._visit_counts[1, 1] == 1
     
-    def test_local_step_sizes_independence(self):
-        """Test that step sizes are independent for different (s,a) pairs."""
+    def test_step_sizes_follow_global_iteration(self):
+        """Step sizes depend on global iteration, not local visit counts."""
         agent = QHQLearning(
             n_states=3, 
             n_actions=2, 
@@ -62,27 +62,26 @@ class TestLocalCounters:
             theta_step=1.0,
             eta_step=1.0,
             theta_power=0.8,
-            eta_power=0.6
+            eta_power=0.6,
+            step_offset=10.0,
         )
-        
-        # Visit (0, 0) many times but (1, 1) only once
+
+        # Drive the global iteration counter up using only (0,0)
         for _ in range(100):
             agent.update(state=0, action=0, reward=1.0, next_state=1)
-        
-        agent.update(state=1, action=1, reward=0.5, next_state=2)
-        
-        # Step sizes for frequently visited pair should be smaller
-        eta_frequent, theta_frequent = agent._next_step_sizes(0, 0)
-        
-        # Step sizes for rarely visited pair should be larger
-        eta_rare, theta_rare = agent._next_step_sizes(1, 1)
-        
-        # Rarely visited pairs should have larger step sizes
-        assert eta_rare > eta_frequent
-        assert theta_rare > theta_frequent
+
+        # Now visit (1,1) for the first time: local count is 1, but global t is large.
+        eta_n, theta_n = agent._next_step_sizes(1, 1)
+
+        t = agent._iteration
+        expected_eta = 1.0 / ((agent.step_offset + t) ** agent.eta_power)
+        expected_theta = 1.0 / ((agent.step_offset + t) ** agent.theta_power)
+
+        assert eta_n == pytest.approx(expected_eta)
+        assert theta_n == pytest.approx(expected_theta)
     
     def test_step_size_decay(self):
-        """Test that step sizes decay as visits increase for a specific (s,a)."""
+        """Test that step sizes decay as global iteration increases."""
         agent = QHQLearning(
             n_states=2, 
             n_actions=2, 
@@ -94,9 +93,7 @@ class TestLocalCounters:
             eta_power=0.6
         )
         
-        # Get initial step sizes (first visit)
-        # Note: _next_step_sizes has the side effect of incrementing visit counts
-        # This is intentional - we're testing the step size calculation logic
+        # Note: _next_step_sizes increments global iteration.
         eta_1, theta_1 = agent._next_step_sizes(0, 0)
         
         # Visit the same pair multiple times
@@ -149,6 +146,7 @@ class TestLocalCounters:
             'eta_step': 0.1,
             'theta_power': 0.8,
             'eta_power': 0.6,
+            # Historical field from epsilon-greedy variants; ignored by sweep-based code.
             'epsilon': 0.1,
             'W': np.zeros((3, 2)),
             'Q': np.zeros((3, 2)),

@@ -10,6 +10,12 @@
 \usepackage{natbib}
 \usepackage{multicol}
 \usepackage{amsthm}
+
+% Polish labels for algorithms
+\floatname{algorithm}{Algorytm}
+\renewcommand{\listalgorithmname}{Spis algorytmów}
+\renewcommand{\algorithmicrequire}{\textbf{Wymagania:}}
+\renewcommand{\algorithmicensure}{\textbf{Wynik:}}
 % Tighten vertical spacing around theorem/proof blocks.
 % (amsthm doesn't provide \theorempreskipamount/\theorempostskipamount here)
 \newtheoremstyle{tightplain}% name
@@ -71,7 +77,7 @@
     \item[$\mu$] -- reguła pierwszego kroku
     \item[$\mu^\star$] -- optymalna reguła pierwszego kroku
     \item[$\phi_s^\star$] -- optymalna polityka stacjonarna
-    \item[$\pi_\beta^\star$] -- optymalna polityka wykładnicza
+    \item[$\phi_\beta^\star$] -- optymalna polityka wykładnicza
     \item[$J_{\phi}^{\alpha,\beta}$] -- wartość quasi-hiperboliczna
     \item[$J_{\phi}^{\beta}$] -- wartość wykładnicza
     \item[$V$] -- funkcja wartości

@@ -1,7 +1,7 @@
 """
 Quasi-Hyperbolic Q-Learning Algorithm
 
-Implementation of Q-learning algorithm for Markov Decision Processes 
+Implementation of Q-learning algorithm for Markov Decision Processes
 with quasi-hyperbolic discounting for precommitted agents.
 
 Based on:
@@ -14,63 +14,69 @@ from __future__ import annotations
 import json
 import warnings
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
 
 import numpy as np
+
+StepSchedule = Callable[[int], float]
+TransitionOutcome = Union[
+    Tuple[int, float],
+    Tuple[int, float, bool],
+    Tuple[int, float, bool, Dict[str, object]],
+]
+TransitionSampler = Callable[[int, int], TransitionOutcome]
+
 
 class QHQLearning:
     """
     Quasi-Hyperbolic Q-Learning algorithm for precommitted agents.
-    
+
     This implementation follows the theoretical framework where the agent
     commits to a policy at the beginning and follows it throughout the process.
     """
-    
-    def __init__(self, 
-                 n_states: int, 
-                 n_actions: int,
-                 alpha: float = 0.8,
-                 beta: float = 0.95,
-                 theta_step: float = 0.1,
-                 eta_step: Optional[float] = None,
-                 theta_power: float = 0.8,
-                 eta_power: float = 0.6,
-                 epsilon: float = 0.1,
-                 **legacy_kwargs: Any):
+
+    def __init__(
+        self,
+        n_states: int,
+        n_actions: int,
+        alpha: float = 0.8,
+        beta: float = 0.95,
+        theta_step: float = 0.1,
+        eta_step: Optional[float] = None,
+        theta_power: float = 0.8,
+        eta_power: float = 0.6,
+        init_value: float = 0.0,
+        # New (policy-evaluation-style) schedule hooks:
+        theta_schedule: Optional[StepSchedule] = None,
+        eta_schedule: Optional[StepSchedule] = None,
+        step_offset: float = 10.0,
+        **legacy_kwargs: Any,
+    ):
         r"""
         Initialize QH Q-Learning algorithm.
-        
+
         Args:
             n_states: Number of states in the MDP
-            n_actions: Number of actions in the MDP  
+            n_actions: Number of actions in the MDP
             alpha: Present-bias parameter ($0 \leq \alpha \leq 1$)
             beta: Exponential discount factor ($0 \leq \beta < 1$)
-            theta_step: Initial learning rate for the slow timescale ($\theta_n$)
-            eta_step: Initial learning rate for the fast timescale ($\eta_n$). Defaults to \texttt{theta\_step} when not provided.
-            theta_power: Exponent for Robbins--Monro schedule of $\theta_n$ (must be $>0.5$ and greater than \texttt{eta\_power})
+            theta_step: Initial learning rate magnitude for the slow timescale ($\theta_n$)
+            eta_step: Initial learning rate magnitude for the fast timescale ($\eta_n$).
+                Defaults to ``theta_step`` when not provided.
+            theta_power: Exponent for Robbins--Monro schedule of $\theta_n$
+                (must be $>0.5$ and greater than ``eta_power`` for two-timescale separation)
             eta_power: Exponent for Robbins--Monro schedule of $\eta_n$ (must be $>0.5$)
-            epsilon: Exploration rate for epsilon-greedy policy
+            init_value: Initial fill value for both ``W`` and ``Q`` tables.
+            theta_schedule: Optional custom callable producing $\theta_n$ from iteration index.
+                If provided, overrides (theta_step, theta_power, step_offset) for that schedule.
+            eta_schedule: Optional custom callable producing $\eta_n$ from iteration index.
+                If provided, overrides (eta_step, eta_power, step_offset) for that schedule.
+            step_offset: Offset used in default Robbins--Monro schedule:
+                ``step / (offset + t) ** power``.
+                Kept at 10.0 to preserve the previous behavior of smaller initial steps.
         """
-        sigma_legacy = legacy_kwargs.pop("sigma", None)
-        gamma_legacy = legacy_kwargs.pop("gamma", None)
         alpha_lr_legacy = legacy_kwargs.pop("alpha_lr", None)
         learning_rate_legacy = legacy_kwargs.pop("learning_rate", None)
-
-        if sigma_legacy is not None:
-            warnings.warn(
-                "Parameter 'sigma' is deprecated; use 'alpha' for the present-bias value.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            alpha = sigma_legacy
-
-        if gamma_legacy is not None:
-            warnings.warn(
-                "Parameter 'gamma' is deprecated; use 'beta' for the exponential discount factor.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            beta = gamma_legacy
 
         legacy_lr = alpha_lr_legacy if alpha_lr_legacy is not None else learning_rate_legacy
         if legacy_lr is not None:
@@ -88,9 +94,12 @@ class QHQLearning:
             raise ValueError("alpha must lie in [0, 1]")
         if not 0.0 <= beta < 1.0:
             raise ValueError("beta must lie in [0, 1)")
+        if step_offset <= 0:
+            raise ValueError("step_offset must be positive.")
         if theta_power <= 0.5 or eta_power <= 0.5:
             raise ValueError("Robbins-Monro exponents must exceed 0.5 for square-summable schedules")
         if theta_power <= eta_power:
+            # Match the intent from policy evaluation: θ decays faster (smaller) than η.
             warnings.warn(
                 "theta_power should be strictly greater than eta_power to ensure two-timescale separation.",
                 UserWarning,
@@ -105,39 +114,70 @@ class QHQLearning:
         self.n_actions = n_actions
         self.alpha = alpha
         self.beta = beta
-        self.theta_step = theta_step
-        self.eta_step = eta_step
-        self.theta_power = theta_power
-        self.eta_power = eta_power
-        self.epsilon = epsilon
+        self.theta_step = float(theta_step)
+        self.eta_step = float(eta_step)
+        self.theta_power = float(theta_power)
+        self.eta_power = float(eta_power)
+        self.step_offset = float(step_offset)
+        self.init_value = float(init_value)
         self._iteration = 0
-        
-        # LOCAL COUNT-BASED STEP SIZES: Track visits per (s,a) pair
-        # This ensures rarely-visited pairs get adequate learning opportunities
+
+        # Build schedules like in qh_policy_evaluation.py
+        self._eta_schedule = self._build_schedule(
+            eta_schedule, base_value=self.eta_step, exponent=self.eta_power, offset=self.step_offset
+        )
+        self._theta_schedule = self._build_schedule(
+            theta_schedule, base_value=self.theta_step, exponent=self.theta_power, offset=self.step_offset
+        )
+
+        # Track visits per (s,a) pair for diagnostics / persistence.
+        # Step sizes are generated from the GLOBAL iteration counter (see _next_step_sizes).
         self._visit_counts = np.zeros((n_states, n_actions), dtype=np.int64)
-        
+
         # Initialize Q-functions
-        # OPTIMISTIC INITIALIZATION: Start with high values to encourage exploration
-        self.W = np.full((n_states, n_actions), 25.0)  # Auxiliary Q-function W
-        self.Q = np.full((n_states, n_actions), 25.0)  # Quasi-hyperbolic Q-function
-        
-    def get_action(self, state: int, exploration: bool = True) -> int:
-        """
-        Get action using epsilon-greedy policy based on QH Q-values.
-        
-        Args:
-            state: Current state
-            exploration: Whether to use epsilon-greedy exploration
-            
-        Returns:
-            Selected action
-        """
-        if exploration and np.random.random() < self.epsilon:
-            return np.random.randint(self.n_actions)
-        else:
-            return np.argmax(self.Q[state])
-    
-    def update(self, state: int, action: int, reward: float, next_state: int, *, done: bool = False) -> None:
+        self.W = np.full((n_states, n_actions), self.init_value)  # Auxiliary Q-function W (exponential baseline)
+        self.Q = np.full((n_states, n_actions), self.init_value)  # Quasi-hyperbolic Q
+
+    @staticmethod
+    def _normalize_available_actions(
+        n_actions: int,
+        available_actions: Optional[Union[Sequence[int], Callable[[int], Sequence[int]]]],
+    ) -> Callable[[int], Sequence[int]]:
+        if available_actions is None:
+
+            def _all_actions(_state: int) -> Sequence[int]:
+                return range(n_actions)
+
+            return _all_actions
+
+        if callable(available_actions):
+            return available_actions
+
+        action_list = list(available_actions)
+
+        def _fixed_actions(_state: int) -> Sequence[int]:
+            return action_list
+
+        return _fixed_actions
+
+    @staticmethod
+    def _validate_action_indices(actions: Sequence[int], *, n_actions: int) -> None:
+        if len(actions) == 0:
+            raise ValueError("available_actions(state) returned an empty action set.")
+        for action in actions:
+            if not 0 <= int(action) < n_actions:
+                raise ValueError(f"Invalid action index {action} for n_actions={n_actions}.")
+
+    def update(
+        self,
+        state: int,
+        action: int,
+        reward: float,
+        next_state: int,
+        *,
+        done: bool = False,
+        available_actions: Optional[Callable[[int], Sequence[int]]] = None,
+    ) -> None:
         r"""One step of Algorithm 2 with Robbins--Monro schedules and terminal masking.
 
         The fast sequence :math:`(\eta_n)` drives the auxiliary baseline ``W`` using
@@ -152,74 +192,195 @@ class QHQLearning:
             next_state: Next state
             done: Whether ``next_state`` is terminal (prevents bootstrapping)
         """
-        # Snapshot W_n(s, a) before the fast update
-        w_prev = self.W[state, action]
-
-        # LOCAL STEP SIZES: Compute based on visits to THIS specific (s,a) pair
         eta_n, theta_n = self._next_step_sizes(state, action)
+        self._update_core(
+            state,
+            action,
+            reward,
+            next_state,
+            eta_n=eta_n,
+            theta_n=theta_n,
+            done=done,
+            available_actions=available_actions,
+        )
+
+    def _update_core(
+        self,
+        state: int,
+        action: int,
+        reward: float,
+        next_state: int,
+        *,
+        eta_n: float,
+        theta_n: float,
+        done: bool,
+        available_actions: Optional[Callable[[int], Sequence[int]]],
+    ) -> None:
+        """Shared update logic parameterized by (eta_n, theta_n)."""
+
+        # Snapshot W_n(s, a) before the fast update
+        w_prev = self.W[int(state), int(action)]
 
         # Fast timescale (\eta_n): exponential baseline W
-        max_w_next = 0.0 if done else np.max(self.W[next_state])
-        td_error_w = reward + self.beta * max_w_next - w_prev
-        w_new = w_prev + eta_n * td_error_w
-        self.W[state, action] = w_new
-        
+        if done:
+            max_w_next = 0.0
+        else:
+            if available_actions is None:
+                next_actions = list(range(self.n_actions))
+            else:
+                next_actions = list(available_actions(int(next_state)))
+            self._validate_action_indices(next_actions, n_actions=self.n_actions)
+            max_w_next = float(np.max(self.W[int(next_state), next_actions]))
+
+        td_error_w = float(reward) + self.beta * max_w_next - float(w_prev)
+        w_new = float(w_prev) + float(eta_n) * td_error_w
+        self.W[int(state), int(action)] = w_new
+
         # Slow timescale (\theta_n): quasi-hyperbolic Q
-        qh_target = (1.0 - self.alpha) * reward + self.alpha * w_new
-        td_error_q = qh_target - self.Q[state, action]
-        self.Q[state, action] += theta_n * td_error_q
+        qh_target = (1.0 - self.alpha) * float(reward) + self.alpha * w_new
+        td_error_q = qh_target - float(self.Q[int(state), int(action)])
+        self.Q[int(state), int(action)] += float(theta_n) * td_error_q
+
+    def _update_fixed_steps(
+        self,
+        state: int,
+        action: int,
+        reward: float,
+        next_state: int,
+        *,
+        eta_n: float,
+        theta_n: float,
+        done: bool = False,
+        available_actions: Optional[Callable[[int], Sequence[int]]] = None,
+    ) -> None:
+        r"""Update using externally provided (eta_n, theta_n) without advancing n.
+
+        Used by the sweep / generative-model driver to match the pseudocode where
+        a single pair (\eta_n, \theta_n) applies to all (s,a) updates inside one
+        sweep iteration n.
+        """
+
+        self._record_visit(int(state), int(action))
+        self._update_core(
+            int(state),
+            int(action),
+            float(reward),
+            int(next_state),
+            eta_n=float(eta_n),
+            theta_n=float(theta_n),
+            done=bool(done),
+            available_actions=available_actions,
+        )
+
+    def _next_sweep_step_sizes(self) -> tuple[float, float]:
+        """Advance the outer sweep counter by one and return (eta_n, theta_n)."""
+
+        self._iteration += 1
+        t = self._iteration
+        eta_n = float(self._eta_schedule(t))
+        theta_n = float(self._theta_schedule(t))
+        return eta_n, theta_n
+
+    def _record_visit(self, state: int, action: int) -> None:
+        self._visit_counts[int(state), int(action)] += 1
 
     def _next_step_sizes(self, state: int, action: int) -> tuple[float, float]:
-        """Generate the next pair of Robbins--Monro step sizes for a specific (s,a) pair.
-        
-        Uses LOCAL counting per state-action pair instead of global iteration count.
-        This ensures rarely-visited pairs receive adequate learning opportunities.
-        
-        Args:
-            state: Current state
-            action: Current action
-            
-        Returns:
-            Tuple of (eta_n, theta_n) step sizes for this specific (s,a) pair
-            
-        Note:
-            The global iteration counter is still incremented for backward compatibility,
-            but step sizes are now calculated based on local visit counts per (s,a) pair.
-            Since each update() call visits exactly one (s,a) pair, the global counter
-            still represents total number of updates.
+        """Generate the next pair of Robbins--Monro step sizes.
+
+        This matches the step-size semantics in `qh_policy_evaluation.py`:
+        a GLOBAL iteration counter drives both schedules.
+
+        Visit counts per (s,a) are still tracked, but they do not influence
+        the step sizes.
         """
-        # Increment visit count for THIS (s,a) pair
-        self._visit_counts[state, action] += 1
-        
-        # Also increment global iteration for backward compatibility
+
+        self._record_visit(state, action)
         self._iteration += 1
-        
-        # LOCAL STEP SIZE: Based on visits to THIS specific (s,a) pair
-        # Use a smaller offset (10.0 instead of 100.0) to allow faster learning
-        # for rarely-visited pairs while still preventing huge initial steps
-        n_visits = self._visit_counts[state, action]
-        denom = 10.0 + n_visits
-        eta_n = self.eta_step / (denom ** self.eta_power)
-        theta_n = self.theta_step / (denom ** self.theta_power)
+        t = self._iteration
+
+        eta_n = float(self._eta_schedule(t))
+        theta_n = float(self._theta_schedule(t))
         return eta_n, theta_n
-    
-    def get_policy(self) -> np.ndarray:
+
+    @staticmethod
+    def _sample_transition(sampler: TransitionSampler, state: int, action: int) -> tuple[int, float, bool]:
+        """Normalize a generative-model transition sampler output."""
+
+        outcome = sampler(state, action)
+        if not isinstance(outcome, tuple):
+            raise TypeError("Transition sampler must return a tuple.")
+        if len(outcome) == 2:
+            next_state, reward = outcome
+            done = False
+        elif len(outcome) == 3:
+            next_state, reward, done = outcome
+        elif len(outcome) == 4:
+            next_state, reward, done, _info = outcome
+        else:
+            raise ValueError("Transition sampler must return 2-4 values.")
+        return int(next_state), float(reward), bool(done)
+
+    def get_policy(
+        self,
+        *,
+        available_actions: Optional[Union[Sequence[int], Callable[[int], Sequence[int]]]] = None,
+    ) -> np.ndarray:
         """
         Extract the optimal policy from Q-functions.
-        
+
         Returns:
             Policy array where policy[s] gives the optimal action in state s
         """
-        return np.argmax(self.Q, axis=1)
-    
-    def get_value_function(self) -> np.ndarray:
+        actions_fn = self._normalize_available_actions(self.n_actions, available_actions)
+        policy = np.zeros(self.n_states, dtype=int)
+        for state in range(self.n_states):
+            actions = list(actions_fn(int(state)))
+            self._validate_action_indices(actions, n_actions=self.n_actions)
+            q_values = self.Q[int(state), actions]
+            policy[int(state)] = int(actions[int(np.argmax(q_values))])
+        return policy
+
+    def get_value_function(
+        self,
+        *,
+        available_actions: Optional[Union[Sequence[int], Callable[[int], Sequence[int]]]] = None,
+    ) -> np.ndarray:
         """
         Extract value function from Q-functions.
-        
+
         Returns:
             Value function array
         """
-        return np.max(self.Q, axis=1)
+        actions_fn = self._normalize_available_actions(self.n_actions, available_actions)
+        values = np.zeros(self.n_states, dtype=float)
+        for state in range(self.n_states):
+            actions = list(actions_fn(int(state)))
+            self._validate_action_indices(actions, n_actions=self.n_actions)
+            values[int(state)] = float(np.max(self.Q[int(state), actions]))
+        return values
+
+    def _build_schedule(
+        self, custom_schedule: Optional[StepSchedule], base_value: float, exponent: float, offset: float
+    ) -> StepSchedule:
+        """Construct a step size schedule, either constant or decaying.
+
+        Args:
+            custom_schedule: Optional user-provided schedule function
+            base_value: Base value for the schedule
+            exponent: Exponent for decay (Robbins--Monro style)
+            offset: Offset for decay
+
+        Returns:
+            Callable schedule function
+        """
+        if custom_schedule is not None:
+            return custom_schedule
+
+        # Default Robbins--Monro style schedule
+        def schedule(iteration: int) -> float:
+            return base_value / (offset + iteration) ** exponent
+
+        return schedule
 
     # ------------------------------------------------------------------
     # Persistence helpers
@@ -236,36 +397,20 @@ class QHQLearning:
             "eta_step": float(self.eta_step),
             "theta_power": float(self.theta_power),
             "eta_power": float(self.eta_power),
-            "epsilon": float(self.epsilon),
             "W": self.W,
             "Q": self.Q,
             "iteration": int(self._iteration),
             "visit_counts": self._visit_counts,
-            # Backward compatibility payload
-            "sigma": float(self.alpha),
-            "gamma": float(self.beta),
-            "alpha": float(self.theta_step),
-            "q_exp": self.W,
-            "q_qh": self.Q,
         }
 
     def load_state_dict(self, state: Dict[str, Any]) -> None:
         """Load the agent parameters from a snapshot."""
         alpha_bias = state.get("alpha_bias")
-        if alpha_bias is None:
-            alpha_bias = state.get("sigma")
-        if alpha_bias is None and "theta_step" in state and "alpha" in state:
-            # New-format save but alias missing; treat alpha as bias only when theta_step present
-            alpha_bias = state.get("alpha")
 
         beta_discount = state.get("beta_discount")
-        if beta_discount is None:
-            beta_discount = state.get("beta")
-        if beta_discount is None:
-            beta_discount = state.get("gamma")
 
         if alpha_bias is None or beta_discount is None:
-            raise ValueError("State dict missing required discount parameters.")
+            raise ValueError("State dict must contain 'alpha_bias' and 'beta_discount'.")
 
         if "theta_step" in state:
             theta_step = float(state["theta_step"])
@@ -285,12 +430,15 @@ class QHQLearning:
         self.eta_step = eta_step
         self.theta_power = theta_power
         self.eta_power = eta_power
-        self.epsilon = float(state["epsilon"])
+        # Backward compatibility: older checkpoints may include exploration-related
+        # keys (like 'epsilon'); sweep-based training ignores them.
 
-        self.W = np.array(state.get("W", state.get("q_exp")), copy=True)
-        self.Q = np.array(state.get("Q", state.get("q_qh")), copy=True)
+        if "W" not in state or "Q" not in state:
+            raise ValueError("State dict must contain 'W' and 'Q' arrays.")
+        self.W = np.array(state["W"], copy=True)
+        self.Q = np.array(state["Q"], copy=True)
         self._iteration = int(state.get("iteration", 0))
-        
+
         # Load visit counts with backward compatibility
         if "visit_counts" in state:
             self._visit_counts = np.array(state["visit_counts"], copy=True)
@@ -333,21 +481,11 @@ class QHQLearning:
         with np.load(source, allow_pickle=True) as data:
             n_states = int(data["n_states"])
             n_actions = int(data["n_actions"])
-            epsilon = float(data["epsilon"])
 
-            alpha_bias = data.get("alpha_bias")
-            if alpha_bias is None and "sigma" in data:
-                alpha_bias = data["sigma"]
-            if alpha_bias is None and "alpha" in data and "theta_step" in data:
-                alpha_bias = data["alpha"]
-            alpha_bias = float(alpha_bias) if alpha_bias is not None else 0.8
-
-            beta_discount = data.get("beta_discount")
-            if beta_discount is None and "beta" in data:
-                beta_discount = data["beta"]
-            if beta_discount is None and "gamma" in data:
-                beta_discount = data["gamma"]
-            beta_discount = float(beta_discount) if beta_discount is not None else 0.95
+            if "alpha_bias" not in data or "beta_discount" not in data:
+                raise ValueError("Saved agent is missing required keys 'alpha_bias'/'beta_discount'.")
+            alpha_bias = float(data["alpha_bias"])
+            beta_discount = float(data["beta_discount"])
 
             if "theta_step" in data:
                 theta_step = float(data["theta_step"])
@@ -366,16 +504,17 @@ class QHQLearning:
                         beta=beta_discount,
                         theta_step=theta_step,
                         eta_step=eta_step,
-                        epsilon=epsilon,
                         theta_power=theta_power,
                         eta_power=eta_power)
 
-            agent.W = np.array(data.get("W", data.get("q_exp")), copy=True)
-            agent.Q = np.array(data.get("Q", data.get("q_qh")), copy=True)
+            if "W" not in data or "Q" not in data:
+                raise ValueError("Saved agent is missing required arrays 'W'/'Q'.")
+            agent.W = np.array(data["W"], copy=True)
+            agent.Q = np.array(data["Q"], copy=True)
 
             if "iteration" in data:
                 agent._iteration = int(data["iteration"])
-            
+
             # Load visit counts with backward compatibility
             if "visit_counts" in data:
                 agent._visit_counts = np.array(data["visit_counts"], copy=True)
@@ -393,42 +532,67 @@ class QHQLearning:
         return agent
 
 
-def train_qh_qlearning(env, agent: QHQLearning, n_episodes: int = 1000) -> Dict:
-    """
-    Train QH Q-Learning agent in environment.
-    
+def train_qh_qlearning_sweep(
+    sampler: TransitionSampler,
+    agent: QHQLearning,
+    *,
+    n_iterations: int,
+    states: Optional[Sequence[int]] = None,
+    available_actions: Optional[Union[Sequence[int], Callable[[int], Sequence[int]]]] = None,
+    actions: Optional[Union[Sequence[int], Callable[[int], Sequence[int]]]] = None,
+) -> Dict[str, Any]:
+    """Train QH Q-Learning with a generative model via full sweeps over S×A.
+
+    This matches the common pseudocode setting where, for each iteration, the
+    algorithm visits every state-action pair and samples a transition
+    ``(s', r, done) ~ q(·|s,a)`` from a generative model.
+
     Args:
-        env: Environment (should have step, reset methods)
-        agent: QHQLearning agent
-        n_episodes: Number of training episodes
-        
+        sampler: Callable implementing the generative model.
+        agent: QHQLearning agent to update.
+        n_iterations: Number of full sweeps.
+        states: Optional iterable of state indices (defaults to ``range(agent.n_states)``).
+        actions: Either
+            - an iterable of action indices used for every state (defaults to ``range(agent.n_actions)``), or
+            - a callable ``actions(state) -> iterable[int]`` returning the available actions for that state.
+
     Returns:
-        Training statistics
+        Dict with learned arrays and basic counters.
     """
-    episode_rewards = []
-    
-    for episode in range(n_episodes):
-        state = env.reset()
-        episode_reward = 0
-        done = False
-        
-        while not done:
-            action = agent.get_action(state)
-            next_state, reward, done, _ = env.step(action)
-            
-            agent.update(state, action, reward, next_state, done=done)
-            
-            state = next_state
-            episode_reward += reward
-        
-        episode_rewards.append(episode_reward)
-        
-        # Decay exploration rate
-        if episode % 100 == 0:
-            agent.epsilon *= 0.95
-    
+
+    if n_iterations <= 0:
+        raise ValueError("n_iterations must be positive")
+
+    state_list = list(range(agent.n_states)) if states is None else list(states)
+
+    if actions is not None and available_actions is not None:
+        raise ValueError("Pass only one of 'available_actions' or legacy 'actions'.")
+
+    actions_source = available_actions if available_actions is not None else actions
+    available_actions_fn = agent._normalize_available_actions(agent.n_actions, actions_source)
+
+    for _ in range(n_iterations):
+        # One (eta_n, theta_n) per sweep iteration n (matches pseudocode).
+        eta_n, theta_n = agent._next_sweep_step_sizes()
+        for state in state_list:
+            state_actions = list(available_actions_fn(int(state)))
+            agent._validate_action_indices(state_actions, n_actions=agent.n_actions)
+            for action in state_actions:
+                next_state, reward, done = agent._sample_transition(sampler, int(state), int(action))
+                agent._update_fixed_steps(
+                    int(state),
+                    int(action),
+                    reward,
+                    next_state,
+                    eta_n=eta_n,
+                    theta_n=theta_n,
+                    done=done,
+                    available_actions=available_actions_fn,
+                )
+
     return {
-        'episode_rewards': episode_rewards,
-        'final_policy': agent.get_policy(),
-        'final_values': agent.get_value_function()
+        "W": agent.W,
+        "Q": agent.Q,
+        "iteration": int(agent._iteration),
+        "visit_counts": agent._visit_counts,
     }

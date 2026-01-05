@@ -241,19 +241,36 @@ def tune_hyperparameters(env, alpha, beta):
             eta_step=e_step,
             theta_power=t_pow,
             eta_power=e_pow,
-            epsilon=0.2
         )
-        
+
+        # Sweep-based training with a generative model sampler(state, action).
+        # Match the previous compute budget ("episodes" single-step updates) by
+        # converting it to sweeps over S×A.
+        from src.algorithms.qh_qlearning import train_qh_qlearning_sweep
+
+        def make_sampler(seed: int):
+            sampler_rng = np.random.default_rng(seed)
+
+            def sampler(state: int, action: int):
+                s_hat = min(int(state) + int(action), env.M)
+                d = sampler_rng.choice(env.demand_values, p=env.demand_probs)
+                next_state = max(s_hat - int(d), 0)
+
+                cost = (
+                    env.c * int(action)
+                    + env.h * max(s_hat - int(d), 0)
+                    - env.p * min(s_hat, int(d))
+                )
+                reward = -float(cost)
+                done = False
+                return int(next_state), reward, bool(done)
+
+            return sampler
+
         episodes = 500000
-        state = env.reset()
-        for i in range(episodes):
-            if i % 10000 == 0 and agent.epsilon > 0.01:
-                agent.epsilon *= 0.9
-                
-            action = agent.get_action(state)
-            next_state, reward, done, _ = env.step(action)
-            agent.update(state, action, reward, next_state, done=done)
-            state = next_state
+        updates_per_sweep = agent.n_states * agent.n_actions
+        n_sweeps = max(1, int(episodes) // int(updates_per_sweep))
+        train_qh_qlearning_sweep(sampler=make_sampler(1000 + count), agent=agent, n_iterations=int(n_sweeps))
             
         # Calculate Max Absolute Difference (Worst Case Error)
         max_diff = np.max(np.abs(agent.Q - Q_analytical))

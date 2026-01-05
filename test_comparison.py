@@ -6,12 +6,22 @@ This demonstrates the improvement achieved by using local (per state-action)
 visit counters instead of a global iteration counter.
 """
 
+# This file is a standalone demo script, not a unit test.
+# Prevent pytest from collecting it by default.
+__test__ = False
+
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
+# Skip under pytest collection (this is a long-running demo).
+if os.environ.get("PYTEST_CURRENT_TEST") is not None:
+    import pytest
+
+    pytest.skip("Standalone demo script; not part of unit tests.", allow_module_level=True)
+
 import numpy as np
-from src.algorithms.qh_qlearning import QHQLearning
+from src.algorithms.qh_qlearning import QHQLearning, train_qh_qlearning_sweep
 
 
 class SimpleInventoryEnv:
@@ -116,7 +126,7 @@ def main():
     for s in range(env.n_states):
         print(f"{s:<8} | {Q_analytical[s,0]:<12.4f} | {Q_analytical[s,1]:<12.4f} | {Q_analytical[s,2]:<12.4f}")
     
-    # Train agent with local counters
+    # Train agent via sweep-based generative model
     print("\n" + "="*80)
     print("Training with LOCAL COUNT-BASED STEP SIZES...")
     print("="*80)
@@ -130,25 +140,34 @@ def main():
         eta_step=2.0,
         theta_power=0.60,
         eta_power=0.55,
-        epsilon=0.2
     )
-    
-    # Training loop
-    episodes = 2_000_000
-    state = env.reset()
-    
-    for i in range(1, episodes + 1):
-        if i % 500000 == 0:
-            print(f"Progress: {i:,}/{episodes:,}")
-        
-        # More gradual epsilon decay to ensure exploration
-        if agent.epsilon > 0.01:
-            agent.epsilon *= 0.999995
-            
-        action = agent.get_action(state)
-        next_state, reward, done, _ = env.step(action)
-        agent.update(state, action, reward, next_state, done=done)
-        state = next_state
+
+    def make_sampler(seed: int):
+        rng = np.random.default_rng(seed)
+
+        def sampler(state: int, action: int):
+            s_hat = min(int(state) + int(action), env.M)
+            d = rng.choice(env.demand_values, p=env.demand_probs)
+            next_state = max(s_hat - int(d), 0)
+
+            cost = (
+                env.c * int(action)
+                + env.h * max(s_hat - int(d), 0)
+                - env.p * min(s_hat, int(d))
+            )
+            reward = -float(cost)
+            done = False
+            return int(next_state), reward, bool(done)
+
+        return sampler
+
+    updates = 2_000_000
+    updates_per_sweep = agent.n_states * agent.n_actions
+    n_sweeps = max(1, int(updates) // int(updates_per_sweep))
+    for i in range(1, n_sweeps + 1):
+        if i % max(1, n_sweeps // 4) == 0:
+            print(f"Progress: {i:,}/{n_sweeps:,} sweeps")
+    train_qh_qlearning_sweep(sampler=make_sampler(42), agent=agent, n_iterations=int(n_sweeps))
     
     print("\n" + "="*80)
     print("LEARNED Q-VALUES")
