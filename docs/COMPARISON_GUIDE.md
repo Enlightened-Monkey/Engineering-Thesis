@@ -259,7 +259,7 @@ scipy>=1.6.0
 ## Pliki
 
 - **`comparison_standard_vs_qh.py`**: Główny moduł
-- **`test_comparison.py`**: Szybki test weryfikacyjny
+- **`examples/test_comparison.py`**: Szybki test weryfikacyjny
 - **`../notebooks/standard_vs_qh_comparison.ipynb`**: Interaktywny notebook
 
 ## Dalszy Rozwój

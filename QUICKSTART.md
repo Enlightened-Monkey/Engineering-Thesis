@@ -120,4 +120,4 @@ Różnica: 1.56
 
 - Pełna dokumentacja: `docs/COMPARISON_GUIDE.md`
 - Przykładowy notatnik: `notebooks/standard_vs_qh_comparison.ipynb`
-- Skrypt testowy: `src/experiments/test_comparison.py`
+- Skrypt testowy: `examples/test_comparison.py`

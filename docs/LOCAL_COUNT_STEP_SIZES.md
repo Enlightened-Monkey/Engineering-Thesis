@@ -159,7 +159,7 @@ Run convergence tests:
 python -m pytest src/tests/test_local_counters.py -v
 
 # Integration test showing improvement
-python test_comparison.py
+python examples/test_comparison.py
 ```
 
 ## References
