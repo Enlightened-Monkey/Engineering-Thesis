@@ -8,7 +8,7 @@ Model markowskiego procesu decyzyjnego (MDP) z dyskontowaniem quasi-hiperboliczn
 \item $S$ -- zbiór stanów,
 \item $A$ -- zbiór akcji,
 \item $q(s' \mid s,a)$ -- prawdopodobieństwo przejścia ze stanu $s$ do stanu $s'$ przy akcji $a$,
-\item $r : S \times A \rightarrow \mathbb{R}$ -- funkcja nagrody,
+\item $r : S \times A \rightarrow \mathbb{R}$  (lub $r : S \times A \times S\rightarrow \mathbb{R})$ -- funkcja nagrody,
 \item $\alpha > 0$ -- parametr wzmacniający wagę nagród natychmiastowych,
 \item $\beta \in [0,1)$ -- standardowy współczynnik dyskontowania wykładniczego.
 \end{itemize}

@@ -23,5 +23,8 @@ sphinx-rtd-theme>=0.5.0
 jupyter>=1.0.0
 notebook>=6.4.0
 
+# Optional GPU acceleration (CUDA):
+# torch  (install a CUDA-enabled build appropriate for your system)
+
 # LaTeX support (for thesis compilation)
 # Note: Requires system LaTeX installation (texlive, MiKTeX, etc.)

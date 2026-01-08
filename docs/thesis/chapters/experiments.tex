@@ -15,7 +15,7 @@ gdzie $c>0$ jest stałą zapobiegającą zbyt dużym krokom na początku (offset
 \]
 co zapewnia warunki Robbinsa--Monro $\sum\limits_n \eta_n = \infty$, $\sum\limits_n \eta_n^2 < \infty$ (analogicznie dla $\theta_n$) oraz separację dwuskalową $\frac{\theta_n}{\eta_n} \to 0$.
 
-Przy doborze tych hiperparametrów należy zachować kompromis. Jeżeli iloraz $\frac{\theta_n}{\eta_n}$ maleje zbyt wolno, separacja skal czasowych jest słaba i algorytm przez długi czas „miesza” oba procesy aktualizacji, co opóźnia stabilizację estymat. Z kolei zbyt szybki spadek $\frac{\theta_n}{\eta_n}$ sprawia, że skala wolna ($\theta_n$) uczy się bardzo zachowawczo, przez co zbieżność komponentu odpowiadającego za wartość quasi-hiperboliczną może być nadmiernie powolna.
+Przy doborze tych hiperparametrów należy zachować kompromis. Jeżeli iloraz $\frac{\theta_n}{\eta_n}$ maleje zbyt wolno, separacja skal czasowych jest słaba i algorytm przez długi czas „miesza" oba procesy aktualizacji, co opóźnia stabilizację aproksymat. Z kolei zbyt szybki spadek $\frac{\theta_n}{\eta_n}$ sprawia, że skala wolna ($\theta_n$) uczy się bardzo zachowawczo, przez co zbieżność komponentu odpowiadającego za wartość quasi-hiperboliczną może być nadmiernie powolna.
 
 \begin{figure}[htbp]
     \centering
@@ -28,21 +28,31 @@ Przy doborze tych hiperparametrów należy zachować kompromis. Jeżeli iloraz $
 
 \subsection{Dwustanowy MDP z dyskontowaniem quasi-hiperbolicznym}
 
-Pierwszym środowiskiem testowym jest prosty dwustanowy MDP, policzymy dla niego optymalną politykę dla decydenta zobowiązanego z dyskontowaniem quasi-hiperbolicznym oraz porównamy ją z optymalną polityką dla dyskontowania wykładniczego. Przeprowadzimy 
+Pierwszym środowiskiem testowym jest prosty dwustanowy MDP, policzymy dla niego analitycznie wartości tabeli Q(s,a) i W(s,a), dla 5 różnych polityk i przetestujemy skuteczność zaproponowanych algorytmów w ich odnalezieniu. Istnieją 4 polityki deterministyczne, z których wiemy, że jedna jest optymalna oraz jedna mieszana, które będą rozpatrywane w eksperymencie.
+
 \subsubsection{Definicja modelu}
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.7\textwidth]{fig/example1.png}
-    \caption{Struktura dwustanowego MDP: stany (1, 2), akcje ($a_1, a_2$), nagrody i przejścia probabilistyczne w formacie $q(s' \mid s, a), a_n, r(s, a_n).$}
+    \caption{Struktura dwustanowego MDP: stany (1, 2), akcje ($a_1, a_2$), nagrody i przejścia probabilistyczne w formacie $q(s' \mid s, a), a_n, r(s, a_n, s').$}
     \label{fig:two-state-mdp}
 \end{figure}
 
-Rozpatrujemy MDP $M = (S, A, q, r, \alpha, \beta)$ z:
+Rozpatrujemy MDP $M = (S, A, q, r, \alpha, \beta)$ z: 
 \begin{itemize}
 \item Przestrzeni stanów: $S = \{1, 2\}$
 \item Przestrzeni akcji: $A = \{a_1, a_2\}$
-\item Funkcja nagrody: $r(1, a_1) = 0$, $r(1, a_2) = 2$, $r(2, a_1) = 5$, $r(2, a_2) = 20$ dla 
+\item Funkcja nagrody: 
+\[
+r(1,a_1)=0,\qquad r(1,a_2)=2,
+\]
+oraz dla stanu \(2\):
+\[
+r(2,a_1)=20,\qquad
+r(2,a_2,1)=20,\qquad r(2,a_2,2)=5,
+\]
+tj. przy akcji \(a_2\) w stanie \(2\) nagroda wynosi \(20\) jeśli następuje przejście do stanu \(1\), oraz \(5\) jeśli proces pozostaje w stanie \(2\).
 \item Przejścia:
 \begin{align}
 q(2 \mid 1, a_1) &= 1.0 \quad \text{(deterministyczne)} \\
@@ -50,33 +60,477 @@ q(1 \mid 1, a_2) &= 0.5, \quad q(2 \mid 1, a_2) = 0.5 \\
 q(1 \mid 2, a_1) &= 0.5, \quad q(2 \mid 2, a_1) = 0.5 \\
 q(1 \mid 2, a_2) &= 0.5, \quad q(2 \mid 2, a_2) = 0.5
 \end{align}
+\item Współczynnik dyskontowania quasi-hiperbolicznego: $\alpha = 0.5$
+\item Współczynnik dyskontowania wykładniczego: $\beta = 0.9$
 \end{itemize}
-
-\subsubsection{Interpretacja}
-
-Model ilustruje klasyczną niespójność czasową: w stanie 1 akcja $a_1$ prowadzi deterministycznie do stanu 2 (gdzie czekają duże nagrody), podczas gdy $a_2$ daje małą nagrodę natychmiast. Dla agenta niezaangażowanego (present-biased) akcja $a_2$ może być bardziej atrakcyjna ze względu na natychmiastową nagrodę.
-
-
-\section{Metryki oceny}
-
-Do oceny algorytmów używamy następujących metryk:
+\subsection{Analiza polityk}
+Rozpatrujemy 5 różnych polityk:
 \begin{itemize}
-\item Zbieżność do optymalnej polityki
-\item Czas obliczeniowy
-\item Stabilność numeryczna
-\item Wrażliwość na parametry
+\item Polityka $\phi_1$: zawsze wybiera akcję $a_1$,
+\item Polityka $\phi_2$: zawsze wybiera akcję $a_2$,
+\item Polityka $\phi_3$: w stanie $1$ wybiera akcję $a_1$, w stanie $2$ wybiera akcję $a_2$,
+\item Polityka $\phi_4$: w stanie $1$ wybiera akcję $a_2$, w stanie $2$ wybiera akcję $a_1$,
+\item Polityka mieszana $\phi_5$: w obu stanach wybiera akcję $a_1$ i $a_2$ z prawdopodobieństwem $0.5$.
+\end{itemize}
+Dla każdej z tych polityk obliczamy analitycznie wartości funkcji Q(s,a) i W(s,a) zgodnie z równaniami Bellmana dla dyskontowania quasi-hiperbolicznego. Wyniki te posłużą jako punkt odniesienia do oceny skuteczności zaproponowanych algorytmów uczenia ze wzmocnieniem w odnajdywaniu optymalnych polityk w tym środowisku.
+
+Policzymy przykładowo wartości dla polityki $\phi_1$ (która zawsze wybiera $a_1$): \\
+Wartości \(W^\phi(s)\) spełniają standardowe równania Bellmana dla dyskontowania wykładniczego \(\beta\):
+\[
+W^\phi(s)
+= \sum_{s'\in S} q(s'\mid s,\phi(s))\Big(r(s,\phi(s),s') + \beta\, W^\phi(s')\Big).
+\]
+
+Dla polityki \(\phi_1\) (zawsze wybiera \(a_1\)) w naszym modelu przejścia wyglądają następująco:
+\begin{itemize}
+    \item Z $s=1$ akcja $a_1$ prowadzi deterministycznie do $s'=2$ z nagrodą $0$.
+    \item Z $s=2$ akcja $a_1$ prowadzi deterministycznie do $s'=1$ z nagrodą $15$.
 \end{itemize}
 
-\section{Wyniki eksperymentów}
+Otrzymujemy zatem układ równań:
+\begin{align}
+W^{\phi_1}(1)
+&= q(2\mid 1,a_1)\big(r(1,a_1,2) + \beta W^{\phi_1}(2)\big) \nonumber \\
+&= 1\cdot(0 + \beta W^{\phi_1}(2)) = \beta W^{\phi_1}(2), \label{eq:w1_phi1}\\
+W^{\phi_1}(2)
+&= q(1\mid 2,a_1)\big(r(2,a_1,1) + \beta W^{\phi_1}(1)\big) \nonumber \\
+&= 1\cdot(15 + \beta W^{\phi_1}(1)) = 15 + \beta W^{\phi_1}(1). \label{eq:w2_phi1}
+\end{align}
 
-\subsection{Porównanie z metodami tradycyjnymi}
+Dla \(\beta=0.9\) z (\ref{eq:w1_phi1}) mamy:
+\[
+W^{\phi_1}(1)=0.9\,W^{\phi_1}(2).
+\]
+Podstawiając to do (\ref{eq:w2_phi1}) otrzymujemy:
+\begin{align*}
+W^{\phi_1}(2)
+&= 15 + 0.9\,W^{\phi_1}(1) \\
+&= 15 + 0.9\,(0.9\,W^{\phi_1}(2)) \\
+&= 15 + 0.81\,W^{\phi_1}(2),\\
+W^{\phi_1}(2) - 0.81\,W^{\phi_1}(2)
+&= 15,\\
+0.19\,W^{\phi_1}(2)
+&= 15,\\
+W^{\phi_1}(2) &= \frac{15}{0.19}\approx \mathbf{78.947368}.
+\end{align*}
+Stąd
+\[
+W^{\phi_1}(1)=0.9\,W^{\phi_1}(2)\approx 0.9\cdot 78.947368 \approx \mathbf{71.052632}.
+\]
 
-Porównujemy proponowane algorytmy z tradycyjnymi metodami dla dyskontowania wykładniczego.
+Dla parametrów quasi-hiperbolicznych \((\alpha,\beta)\) definiujemy:
+\[
+Q^\phi(s,a)
+= \sum_{s'\in S} q(s'\mid s,a)\Big(r(s,a,s') + \alpha\beta\, W^\phi(s')\Big).
+\]
 
-\subsection{Wpływ parametrów}
+Dla \(\alpha=0.5\), \(\beta=0.9\) mamy efektywny dyskont \(\alpha\beta = 0.45\).
+Obliczamy wartości $Q$ dla polityki \(\phi_1\):
 
-Analizujemy wpływ parametrów $\sigma$ i $\gamma$ na właściwości algorytmów.
+\begin{align*}
+Q^{\phi_1}(1,a_1)
+&= q(2\mid 1,a_1)\Big(r(1,a_1,2) + \alpha\beta W^{\phi_1}(2)\Big) \\
+&= 1\cdot(0 + 0.45 \cdot 78.947368) \\
+&\approx \mathbf{35.526316},\\[6pt]
+Q^{\phi_1}(2,a_1)
+&= q(1\mid 2,a_1)\Big(r(2,a_1,1) + \alpha\beta W^{\phi_1}(1)\Big) \\
+&= 1\cdot(15 + 0.45 \cdot 71.052632) \\
+&= 15 + 31.973684 \\
+&\approx \mathbf{46.973684}.
+\end{align*}
 
-\section{Dyskusja wyników}
+Tabela wszystkich wartości \(Q^{\phi_i}(s,a)\) (dyskontowanie quasi-hiperboliczne) oraz \(W^{\phi_i}(s,a)\) (dyskontowanie wykładnicze) dla rozważanych polityk \(\phi_1,\dots,\phi_5\):
 
-Interpretujemy otrzymane wyniki w kontekście teorii i praktycznych zastosowań.
+\begin{table}[h!]
+\centering
+\caption{Wartości $Q^{\phi_i}(s,a)$ (dyskontowanie quasi-hiperboliczne, $\alpha=0.5, \beta=0.9$) dla różnych polityk.}
+\label{tab:q_values_all}
+\begin{tabular}{lccccc}
+\toprule
+	\textbf{Para} $(s,a)$ & \textbf{Zawsze $a_1$} & \textbf{Zawsze $a_2$} & \textbf{$a_1$ w $s_1$, $a_2$ w $s_2$} & \textbf{$a_2$ w $s_1$, $a_1$ w $s_2$} & \textbf{Losowa 50/50} \\
+& $(\phi_1: a_1, a_1)$ & $(\phi_2: a_2, a_2)$ & $(\phi_3: a_1, a_2)$ & $(\phi_4: a_2, a_1)$ & $(\phi_5)$ \\
+\midrule
+$(1, a_1)$ & 35.5263 & 34.9875 & 38.7931 & 31.1897 & 35.1278 \\
+$(1, a_2)$ & 35.7500 & 34.6250 & 38.8534 & 31.1724 & 35.1610 \\
+\midrule
+$(2, a_1)$ & 46.9737 & 45.2625 & 49.9138 & 42.1552 & 46.2166 \\
+$(2, a_2)$ & 46.2500 & 45.1250 & 49.3534 & 41.6724 & 45.6983 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\begin{table}[h!]
+\centering
+\caption{Wartości $W^{\phi_i}(s,a)$ (standardowe dyskontowanie $\beta=0.9$) dla różnych polityk.}
+\label{tab:w_values_all}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccc}
+    \csname toprule\endcsname
+    \csname textbf\endcsname{Para} $(s,a)$ & \csname textbf\endcsname{Zawsze $a_1$} & \csname textbf\endcsname{Zawsze $a_2$} & \csname textbf\endcsname{Opt. przyszłościowa} & \csname textbf\endcsname{Opt. teraźniejsza} & \csname textbf\endcsname{Losowa 50/50} \\
+& $(\phi_1)$ & $(\phi_2)$ & $(\phi_3: a_1, a_2)$ & $(\phi_4: a_2, a_1)$ & $(\phi_5)$ \\
+\midrule
+$(1, a_1)$ & 71.0526 & 69.9750 & 77.5862 & 62.3793 & 70.3319 \\
+$(1, a_2)$ & 69.5000 & 67.2500 & 75.7069 & 60.3448 & 68.3750 \\
+\midrule
+$(2, a_1)$ & 78.9474 & 75.5250 & 84.8276 & 69.3103 & 77.4181 \\
+$(2, a_2)$ & 80.0000 & 77.7500 & 86.2069 & 70.8448 & 78.8750 \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+\subsection{Algorytm znajdowania optymalnej polityki}
+Teraz poszukamy optymalnej polityki $\phi_\beta^\star$ dla dyskontowania quasi-hiperbolicznego, korzystając z algorytmu (Algorithm \ref{alg:qh-qlearning}). Na podstawie tabeli Q Spodziewamy się uzyskać politykę $\mu$ = \{1: $a_2$, 2: $a_1$\}, czyli 
+
+Po uruchomieniu uczenia na 25 000 000 iteracji otrzymano następujące aproksymaty tabel $Q(s,a)$ oraz $W(s,a)$:
+
+\begin{table}[h!]
+\centering
+\caption{Oszacowane wartości $Q(s,a)$ i $W(s,a)$ po zakończeniu uczenia (stany indeksowane jako $S=\{1,2\}$).}
+\label{tab:two_state_learned_qw}
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\begin{tabular}{lrr}
+	\toprule
+	\textbf{Stan $s$} & $Q(s,a_1)$ & $Q(s,a_2)$ \\
+\midrule
+1 & 38.7921 & 38.8527 \\
+2 & 49.9129 & 49.3519 \\
+\bottomrule
+\end{tabular}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\begin{tabular}{lrr}
+	\toprule
+	\textbf{Stan $s$} & $W(s,a_1)$ & $W(s,a_2)$ \\
+\midrule
+1 & 77.5813 & 75.6954 \\
+2 & 84.8224 & 86.1988 \\
+\bottomrule
+\end{tabular}
+\end{minipage}
+\end{table}
+
+Z tabeli $Q$ wyznaczamy zachłanną politykę pierwszego kroku
+\(\mu(s)=\arg\max_{a \in A} Q(s,a)\), a z tabeli $W$ politykę kontynuacji
+\(\phi_s(s)=\arg\max_{a \in A} W(s,a)\). Dla powyższych wartości otrzymujemy:
+\[
+\mu(1)=a_2,\quad \mu(2)=a_1,\qquad
+\phi_s(1)=a_1,\quad \phi_s(2)=a_2.
+\]
+Jest to zgodne z oczekiwaniami z tabelami \ref{tab:q_values_all} i \ref{tab:w_values_all}.
+
+
+\subsection{Algorytm Ewaluacji Polityk}
+W eksperymencie testujemy algorytm ewaluacji polityk (Algorithm \ref{alg:policy-eval}) na rozpatrywanych politykach \(\phi_1, \ldots, \phi_5\). Dla każdej polityki uruchamiamy algorytm przez określoną  i porównujemy uzyskane aproksymaty wartości \(Q(s,a)\) z wartościami analitycznymi przedstawionymi w Tabeli \ref{tab:q_values_all}. 
+
+Poniżej przedstawiamy wyniki eksperymentu w postaci pełnej tabeli porównującej wartości teoretyczne i estymowane dla każdej z rozpatrywanych polityk \(\phi_1,\dots,\phi_5\) (w tym przypadku $\mu=\phi_s=\phi_i$).
+
+\begin{table}[h!]
+\centering
+\caption{Porównanie wartości teoretycznych i estymowanych w eksperymencie ewaluacji polityk (Alg. 1) dla dwustanowego MDP, po $1 \times 10^6$ iteracji, $\mu=\phi_s=\phi_i$.}
+\label{tab:two_state_policy_eval_full}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcrrrr}
+    	\toprule
+    $\mu$ (1. krok) & $\phi_s$ (kontynuacja) & Stan & $W$ (teoria) & $W$ (aproksymata) & $J^{\alpha,\beta}_{\rho}$ (teoria) & $J$ (aproksymata) \\
+    \midrule
+    $\,\phi_1$: zawsze $a_1$ & $\phi_1$: zawsze $a_1$ & 1 & 71.0526 & 71.0526 & 35.5263 & 35.5175 \\
+    $\,\phi_1$: zawsze $a_1$ & $\phi_1$: zawsze $a_1$ & 2 & 78.9474 & 78.9474 & 46.9737 & 46.9643 \\
+    $\,\phi_2$: zawsze $a_2$ & $\phi_2$: zawsze $a_2$ & 1 & 67.2500 & 67.2668 & 34.6250 & 34.6340 \\
+    $\,\phi_2$: zawsze $a_2$ & $\phi_2$: zawsze $a_2$ & 2 & 77.7500 & 77.7588 & 45.1250 & 45.1254 \\
+    $\,\phi_3$: $a_1$ w $s=1$, $a_2$ w $s=2$ & $\phi_3$: $a_1$ w $s=1$, $a_2$ w $s=2$ & 1 & 77.5862 & 77.6618 & 38.7931 & 38.7936 \\
+    $\,\phi_3$: $a_1$ w $s=1$, $a_2$ w $s=2$ & $\phi_3$: $a_1$ w $s=1$, $a_2$ w $s=2$ & 2 & 86.2069 & 86.3167 & 49.3534 & 49.3612 \\
+    $\,\phi_4$: $a_2$ w $s=1$, $a_1$ w $s=2$ & $\phi_4$: $a_2$ w $s=1$, $a_1$ w $s=2$ & 1 & 60.3448 & 60.4001 & 31.1724 & 31.1910 \\
+    $\,\phi_4$: $a_2$ w $s=1$, $a_1$ w $s=2$ & $\phi_4$: $a_2$ w $s=1$, $a_1$ w $s=2$ & 2 & 69.3103 & 69.3575 & 42.1552 & 42.1706 \\
+    $\,\phi_5$: losowa 50/50 & $\phi_5$: losowa 50/50 & 1 & 69.3534 & 69.2913 & 35.1767 & 35.1625 \\
+    $\,\phi_5$: losowa 50/50 & $\phi_5$: losowa 50/50 & 2 & 78.1466 & 78.0512 & 45.9483 & 45.9297 \\
+    \bottomrule
+\end{tabular}
+}
+\end{table}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\textwidth]{../plots/Ex1PLots.png}
+    \caption{Zbieżność aproksymatorów w eksperymencie 1 (dwustanowy MDP): błąd normy $\ell_2$ względem wartości teoretycznych dla wybranych polityk.}
+    \label{fig:ex1-plots}
+\end{figure}
+
+
+\subsection{Model zarządzania zapasami}
+
+Drugim, bardziej praktycznym środowiskiem testowym jest model zarządzania zapasami (Inventory MDP) w małej skali, który pozwala również na obliczenia analityczne. 
+\subsubsection{Definicja modelu}
+
+Stan $s \in \{0,1,2,3\}$ oznacza aktualny poziom zapasu (liczbę sztuk na stanie), a akcja $a \in \{0,1,2,3\}$ oznacza liczbę zamawianych sztuk. Pojemność magazynu wynosi $M=3$, więc po złożeniu zamówienia stan po-uzupełnieniu jest równy
+\[
+\hat{s} = \min\{s+a,\, M\}.
+\]
+Następnie realizuje się popyt losowy $D \in \{0,1,2,3\}$ o rozkładzie
+\[
+\mathbb{P}(D=0)=0.1,\quad \mathbb{P}(D=1)=0.2,\quad \mathbb{P}(D=2)=0.3,\quad \mathbb{P}(D=3)=0.4.
+\]
+Kolejny stan jest dany przez
+\[
+s' = \max\{\hat{s}-D,\,0\}.
+\]
+
+Koszty i cena wynoszą odpowiednio: $c=6$ (koszt zakupu), $h=3$ (koszt przetrzymania jednostki zapasu), $p=11$ (cena sprzedaży). Nagrodę (zysk w kroku) definiujemy jako
+\[
+r(s,a,D)=p\,\min\{\hat{s},D\}-c\,a-h\,\max\{\hat{s}-D,0\}.
+\]
+Parametry dyskontowania wynoszą: $\alpha=0.35$ (quasi-hiperboliczne) oraz $\beta=0.95$ (wykładnicze).
+
+\subsubsection{Wartości teoretyczne (analityczne)}
+
+W celu uzyskania punktu odniesienia obliczamy analitycznie optymalną parę polityk deterministycznych $(\mu^\star,\phi_s^\star)$ poprzez pełne przeszukanie wszystkich deterministycznych polityk (dla $4$ stanów i $4$ akcji jest to wykonalne). Następnie wyznaczamy wartości:
+\[
+W^{\phi_s^\star}(s,a)=\mathbb{E}\big[r(s,a,D)+\beta\,W^{\phi_s^\star}(s')\big],
+\qquad
+Q^{\mu^\star,\phi_s^\star}(s,a)=\mathbb{E}\big[r(s,a,D)+\alpha\beta\,W^{\phi_s^\star}(s')\big].
+\]
+
+\begin{table}[h!]
+\centering
+\caption{Wartości analityczne dla Inventory MDP ($M=3$): $Q^{\mu^\star,\phi_s^\star}(s,a)$ (dyskontowanie quasi-hiperboliczne, $\alpha=0.35$, $\beta=0.95$) oraz $W^{\phi_s^\star}(s,a)$ (standardowe dyskontowanie $\beta=0.95$).}
+\label{tab:inv_m3_analytic_wq}
+\begin{minipage}[t]{0.49\textwidth}
+\centering
+\csname textbf\endcsname{$Q^{\mu^\star,\phi_s^\star}(s,a)$}\\
+\vspace{2pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{c|rrrr}
+    \csname toprule\endcsname
+$Q(s,a)$ & $a=0$ & $a=1$ & $a=2$ & $a=3$ \\
+\midrule
+$s=0$ & 44.555 & 48.354 & \csname textbf\endcsname{49.753} & 47.550 \\
+$s=1$ & 54.354 & \csname textbf\endcsname{55.753} & 53.550 & 47.550 \\
+$s=2$ & \csname textbf\endcsname{61.753} & 59.550 & 53.550 & 47.550 \\
+$s=3$ & \csname textbf\endcsname{65.550} & 59.550 & 53.550 & 47.550 \\
+\bottomrule
+\end{tabular}
+}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.49\textwidth}
+\centering
+\csname textbf\endcsname{$W^{\phi_s^\star}(s,a)$}\\
+\vspace{2pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{c|rrrr}
+    \csname toprule\endcsname
+$W(s,a)$ & $a=0$ & $a=1$ & $a=2$ & $a=3$ \\
+\midrule
+$s=0$ & 127.30 & 131.47 & 133.98 & \csname textbf\endcsname{134.00} \\
+$s=1$ & 137.47 & 139.98 & \csname textbf\endcsname{140.00} & 134.00 \\
+$s=2$ & 145.98 & \csname textbf\endcsname{146.00} & 140.00 & 134.00 \\
+$s=3$ & \csname textbf\endcsname{152.00} & 146.00 & 140.00 & 134.00 \\
+\bottomrule
+\end{tabular}
+}
+\end{minipage}
+\end{table}
+
+\subsubsection{Wyniki algorytmu (QH Q-learning)}
+
+Poniżej zestawiamy przykładowy wynik uzyskany z implementacji algorytmu QH Q-learning po $6\,250\,000$ iteracji. Pogrubiono wartości odpowiadające zachłannemu wyborowi akcji w każdym stanie (wyznaczające oszacowania $\hat{\mu}$ i $\hat{\phi}_s$).
+
+\begin{table}[h!]
+\centering
+\caption{Oszacowane wartości $Q(s,a)$ i $W(s,a)$ po zakończeniu uczenia dla Inventory MDP ($M=3$), $\alpha=0.35$, $\beta=0.95$. Pogrubiono wybory zachłanne.}
+\label{tab:inv_m3_learned_qw}
+\begin{minipage}[t]{0.49\textwidth}
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{c|rrrr}
+    \csname toprule\endcsname
+$Q(s,a)$ & $a=0$ & $a=1$ & $a=2$ & $a=3$ \\
+\midrule
+$s=0$ & 44.6349 & 48.4375 & \textbf{49.8316} & 47.6371 \\
+$s=1$ & 54.4310 & \textbf{55.8304} & 53.6284 & 47.6284 \\
+$s=2$ & \textbf{61.8311} & 59.6326 & 53.6321 & 47.6324 \\
+$s=3$ & \textbf{65.6328} & 59.6270 & 53.6232 & 47.6306 \\
+\bottomrule
+\end{tabular}
+}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.49\textwidth}
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{c|rrrr}
+    \csname toprule\endcsname
+$W(s,a)$ & $a=0$ & $a=1$ & $a=2$ & $a=3$ \\
+\midrule
+$s=0$ & 127.4992 & 131.6772 & \textbf{134.2060} & 134.1781 \\
+$s=1$ & 137.6581 & 140.1643 & \textbf{140.2175} & 134.2134 \\
+$s=2$ & \textbf{146.1939} & 146.1299 & 140.2028 & 134.1548 \\
+$s=3$ & \textbf{152.2200} & 146.2367 & 140.1319 & 134.2182 \\
+\bottomrule
+\end{tabular}
+}
+\end{minipage}
+\end{table}
+
+Z tabeli $Q$ otrzymujemy politykę pierwszego kroku $\hat{\mu}(s)=\arg\max_{a\in A} Q(s,a)$:
+\[
+\hat{\mu}(0)=2,\; \hat{\mu}(1)=1,\; \hat{\mu}(2)=0,\; \hat{\mu}(3)=0,
+\]
+a dla polityki kontynuacji $\hat{\phi}_s(s)=\arg\max_{a\in A} W(s,a)$:
+\[
+\hat{\phi}_s(0)=2,\; \hat{\phi}_s(1)=2,\; \hat{\phi}_s(2)=0,\; \hat{\phi}_s(3)=0.
+\]
+Wybór $\hat{\mu}$ jest zgodny z wynikiem analitycznym $\mu^\star$ z Tabeli \ref{tab:inv_m3_policies}. Dla $\hat{\phi}_s$ porównanie z analitycznym wynikiem $\phi_s^\star$ (również z Tabeli \ref{tab:inv_m3_policies}) należy interpretować z uwzględnieniem błędu aproksymacji: w stanach $s=0$ oraz $s=2$ wartości $W(s,a)$ dla najlepszych akcji są bardzo bliskie, więc niewielki szum numeryczny może zmienić argmax.
+
+
+\begin{table}[h!]
+\centering
+\caption{Optymalna para, która składa się z reguły decyzyjnej dla pierwszego kroku i polityki stacjonarnej deterministycznych $(\mu^\star,\phi_s^\star)$ dla Inventory MDP ($M=3$), $\alpha=0.35$, $\beta=0.95$.}
+\label{tab:inv_m3_policies}
+\begin{tabular}{c|cccc}
+	\toprule
+Stan $s$ & 0 & 1 & 2 & 3 \\
+\midrule
+$\mu^\star(s)$ & 2 & 1 & 0 & 0 \\
+$\phi_s^\star(s)$ & 3 & 2 & 1 & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\subsubsection{Wyniki algorytmu ewaluacji polityk (Policy evaluation)}
+
+W tej części uruchamiamy algorytm ewaluacji polityk (Algorithm \ref{alg:policy-eval}) w środowisku Inventory MDP ($M=3$).
+
+\csname textbf\endcsname{Polityka próbkowania.} Zgodnie z założeniami Alg. 1 wykorzystujemy politykę próbkowania $\nu=v$, tj. losową jednostajną po akcjach wykonalnych (spełniających $s+a\le M$).
+
+\csname textbf\endcsname{Rozpatrywane polityki.} Badamy trzy pary polityk $\rho=(\mu,\phi_s)$:
+\begin{itemize}
+    \item $\rho_1=(\hat{\mu},\hat{\phi}_s)$, gdzie $\hat{\mu}$ i $\hat{\phi}_s$ są zachłannymi politykami wyznaczonymi odpowiednio z tabel $Q$ i $W$ (z poprzedniej podsekcji),
+    \item $\rho_2=(v,\hat{\phi}_s)$,
+    \item $\rho_3=(\hat{\mu},v)$.
+\end{itemize}
+
+Na rysunku \ref{fig:ex2-plots} przedstawiono zbieżność błędów normy $\ell_2$ aproksymatorów $W$ oraz $J^{\alpha,\beta}_{\rho}$ względem wartości referencyjnych obliczonych analitycznie.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\textwidth]{../plots/ex2plots.png}
+    \caption{Zbieżność algorytmu ewaluacji polityk (Alg. 1) dla Inventory MDP ($M=3$) dla trzech par polityk $\rho=(\mu,\phi_s)$ przy polityce próbkowania $\nu=v$: błąd normy $\ell_2$ aproksymatorów $W$ i $J$ względem wartości referencyjnych.}
+    \label{fig:ex2-plots}
+\end{figure}
+
+\subsection{Zmodyfikowany model rozbitka (Castaway MDP)}
+
+Ostatnim środowiskiem testowym jest zmodyfikowany model rozbitka (Castaway MDP): stochastyczny proces decyzyjny z losowym horyzontem i sztywnym limitem czasu, modelujący dylemat: konsumować zasoby teraz, czy inwestować w ryzykowne polowanie, aby zwiększyć szanse dotrwania do ratunku.
+
+Formalnie rozpatrujemy MDP $M=(S,A,q,r,\alpha,\beta)$, gdzie $S$ jest przestrzenią stanów, $A$ przestrzenią akcji, $q(s'\mid s,a)$ funkcją przejścia, a $r(s,a,s')$ funkcją nagrody; parametry $(\alpha,\beta)$ odpowiadają dyskontowaniu quasi-hiperbolicznemu używanemu w dalszej części pracy.
+
+\subsubsection{Parametryzacja i jednostki}
+
+Dla uproszczenia obliczeń ciągłe wartości kalorii i objętości wody dyskretyzujemy do \csname textbf\endcsname{jednostek} $j$:
+\begin{itemize}
+    \item $1\,j$ odpowiada $500\,\mathrm{kcal}$ (jedzenie) lub $500\,\mathrm{ml}$ (woda),
+    \item $M\in\mathbb{N}$ oznacza maksymalną liczbę jednostek każdego zasobu możliwą do przechowywania (pojemność magazynu).
+\end{itemize}
+
+\subsubsection{Przestrzeń stanów $S$}
+
+Stan w kroku $t$ opisujemy jako
+\[
+s_t=(f_t,w_t,h_t,d_t)\in\{0,1,\dots,M\}^2\times\{0,1,\dots,H\}\times\{0,1,\dots,T\},
+\]
+gdzie $f_t$ oznacza poziom jedzenia, $w_t$ poziom wody (w jednostkach $j$), $h_t$ poziom zdrowia/kondycji, a $d_t$ liczbę dni spędzonych na wyspie. Parametry $M$ (pojemność magazynu), $H$ (maksymalny poziom zdrowia) i $T$ (sztywny limit czasu -- gwarantowany ratunek) są dodatnimi liczbami całkowitymi. Dodatkowo wyróżniamy dwa stany terminalne (absorbujące):
+\begin{itemize}
+    \item $s_{\mathrm{dead}}$ -- śmierć (jeśli $h_t=0$),
+    \item $s_{\mathrm{res}}$ -- ratunek (zachodzi losowo lub deterministycznie dla $d_t=T$).
+\end{itemize}
+
+\subsubsection{Przestrzeń akcji $A$}
+
+W każdym kroku decyzyjnym rozbitek wybiera akcję złożoną
+\[
+a_t=(m_t, r^f_t, r^w_t),
+\]
+gdzie:
+\begin{itemize}
+    \item $m_t\in\{\text{oszczędzaj},\,\text{poluj}\}$ jest \csname textbf\endcsname{trybem działania} (oszczędzanie energii lub ryzykowne polowanie),
+    \item $r^f_t, r^w_t\in\{\text{Full},\,\text{Half},\,\text{None}\}$ to \csname textbf\endcsname{racjonowanie} (deklarowane limity konsumpcji jedzenia i wody).
+\end{itemize}
+Dla wygody definiujemy docelowe limity konsumpcji (w jednostkach $j$): $\bar c(\text{Full})=2$, $\bar c(\text{Half})=1$, $\bar c(\text{None})=0$ i piszemy $\bar c^f_t=\bar c(r^f_t)$, $\bar c^w_t=\bar c(r^w_t)$.
+
+\subsubsection{Dynamika i przejścia $q(s'\mid s,a)$}
+
+Przejście ze stanu $s_t$ do $s_{t+1}$ odbywa się w czterech sekwencyjnych fazach. Niech $x_t^{(\cdot)}$ oznaczają wartości tymczasowe w trakcie kroku $t$.
+
+\csname textbf\endcsname{(A) Warunki pogodowe (Woda).} Z prawdopodobieństwem $p_{\mathrm{rain}}$ spada deszcz, zasilając zapasy wody o 2 jednostki (do limitu $M$):
+\[
+w_t^{A}=\min\{M,\,w_t+2\cdot \mathbb{I}\{\text{deszcz}\}\}.
+\]
+W przeciwnym razie $w_t^{A}=w_t$. Poziom jedzenia nie zmienia się: $f_t^{A}=f_t$.
+
+\csname textbf\endcsname{(B) Wyprawa (Polowanie).} Jeżeli $m_t=\text{poluj}$, polowanie wymaga inwestycji 1 jednostki jedzenia i 1 jednostki wody.
+\begin{itemize}
+    \item Jeśli $f_t^{A}\ge 1$ i $w_t^{A}\ge 1$, odejmujemy koszt: $f_t^{B}=f_t^{A}-1$, $w_t^{B}=w_t^{A}-1$ i następuje próba polowania.
+    \item W przeciwnym razie akcja zamienia się w oszczędzanie: $f_t^{B}=f_t^{A}$, $w_t^{B}=w_t^{A}$ (brak kosztów i brak zysku).
+\end{itemize}
+Prawdopodobieństwo sukcesu polowania rośnie liniowo ze zdrowiem:
+\[
+p_{\mathrm{hunt}}(h_t)=\pi_0+\pi_1\,\frac{h_t}{H}\;\in[0,1].
+\]
+Wynik:
+\[
+f_t^{C}=f_t^{B}+3\cdot \mathbb{I}\{\text{sukces z prawd. }p_{\mathrm{hunt}}(h_t)\},\quad w_t^{C}=w_t^{B}.
+\]
+Jeśli $m_t=\text{oszczędzaj}$, ustawiamy $f_t^{C}=f_t^{A}$, $w_t^{C}=w_t^{A}$.
+
+\csname textbf\endcsname{(C) Konsumpcja i aktualizacja zdrowia).} Agent konsumuje zgodnie z racjonowaniem, ograniczonym dostępnością po fazach A i B:
+\[
+c^f_t=\min\{\bar c^f_t,\,f_t^{C}\},\qquad c^w_t=\min\{\bar c^w_t,\,w_t^{C}\}.
+\]
+Stan magazynu na kolejny dzień (przed ratunkiem) to
+\[
+f_{t+1}^-=f_t^{C}-c^f_t,\qquad w_{t+1}^-=w_t^{C}-c^w_t.
+\]
+Zmiana zdrowia $\Delta h_t$ jest funkcją faktycznego spożycia; przykładowo (prosty model progowy):
+\[
+\Delta h_t=\begin{cases}
+\; +1, & c^f_t\ge 2\ \wedge\ c^w_t\ge 2,\\
+\; 0, & c^f_t\ge 1\ \wedge\ c^w_t\ge 1\ \wedge\ \neg(c^f_t\ge 2\ \wedge\ c^w_t\ge 2),\\
+\; -1, & \text{w przeciwnym razie.}
+\end{cases}
+\]
+Nowy stan zdrowia: $h_{t+1}=\min\{H,\max\{0,\,h_t+\Delta h_t\}\}$. Jeśli $h_{t+1}=0$, proces przechodzi do stanu $s_{\mathrm{dead}}$.
+
+\csname textbf\endcsname{(D) Prawdopodobieństwo ratunku i sztywny limit czasu.} Jeśli agent przeżył, szansa na ratunek w dniu $d_t$ jest opisana funkcją hazardu $h(d_t)\in[0,1]$:
+\[
+\mathbb{P}(s_{t+1}=s_{\mathrm{res}}\mid s_t,a_t,\ \text{żyje})=h(d_t).
+\]
+Niezależnie od hazardu, zachodzi gwarantowany ratunek przy sztywnym limicie czasu: jeśli $d_t+1=T$, to $s_{t+1}=s_{\mathrm{res}}$ deterministycznie. W przeciwnym razie dzień jest inkrementowany: $d_{t+1}=d_t+1$, a stan zasobów ustala się na $(f_{t+1},w_{t+1})=(f_{t+1}^-,w_{t+1}^-)$ z obcięciem do pojemności $M$.
+
+\subsubsection{Funkcja nagrody $r(s,a,s')$}
+
+Nagroda w kroku $t$ składa się z użyteczności bieżącej konsumpcji oraz nagród terminalnych:
+\[
+r(s_t,a_t,s_{t+1})=
+u_f(c^f_t)+u_w(c^w_t)
+ +\mathbb{I}\{s_{t+1}=s_{\mathrm{res}}\}\,R_{\mathrm{res}}
+ +\mathbb{I}\{s_{t+1}=s_{\mathrm{dead}}\}\,R_{\mathrm{dead}},
+\]
+gdzie $u_f, u_w$ są wklęsłymi funkcjami użyteczności (np. $u_x(z)=\log(1+z)$), $R_{\mathrm{res}}>0$ to bonus za ratunek, a $R_{\mathrm{dead}}<0$ to kara za śmierć.
+
+\subsubsection{Cel optymalizacji (dyskontowanie quasi-hiperboliczne)}
+
+Rozbitka modelujemy jako decydenta quasi-hiperbolicznego z parametrami $(\alpha,\beta)$.
+W notacji używanej w pracy, dla pary polityk deterministycznych $\rho=(\mu,\phi_s)$ definiujemy wartość kontynuacji (przyszłe ja) jako
+\[
+W^{\phi_s}(s)=\mathbb{E}\Big[\sum_{t\ge 0} \beta^t\,r(s_t,\phi_s(s_t),s_{t+1})\,\Big\vert\, s_0=s\Big],
+\]
+a wartość quasi-hiperboliczną pierwszego kroku jako
+\[
+Q^{\mu,\phi_s}(s,a)=\mathbb{E}\big[r(s,a,s')+\alpha\beta\,W^{\phi_s}(s')\big].
+\]
+Optymalna para, która składa się z reguły decyzyjnej dla pierwszego kroku i polityki stacjonarnej, jest oznaczana przez $(\mu^\star,\phi_s^\star)$.

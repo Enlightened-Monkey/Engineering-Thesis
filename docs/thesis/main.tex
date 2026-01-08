@@ -7,9 +7,13 @@
 % Additional packages required by the thesis content
 \usepackage{algorithm}
 \usepackage{algorithmic}
-\usepackage{natbib}
+\usepackage[numbers]{natbib}
 \usepackage{multicol}
 \usepackage{amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{listingsutf8}
 
 % Polish labels for algorithms
 \floatname{algorithm}{Algorytm}
@@ -40,10 +44,10 @@
 \kierunekstudiowang{Mathematics}
 \specjalnosc{[Specjalność]}
 \specjalnoscang{[Specialty]}
-\opiekun{[Opiekun]}
-\streszczenie{Praca analizuje algorytmy optymalizacji dla markowskich procesów decyzyjnych z dyskontowaniem quasi-hiperbolicznym, umożliwiającym lepsze modelowanie niespójności czasowej. Rozważane są metody wyznaczania optymalnej polityki dla decydentów zobowiązanych.}
-\streszczenieang{[Abstract to be completed -- up to 530 characters.]}
-\slowakluczowe{90C39 -- Programowanie dynamiczne; 90C40 -- Procesy markowskie; 90B05 -- Teoria zapasów; 93E03 -- Sterowanie stochastyczne; 93E35 -- Estymacja stochastyczna}
+\opiekun{prof. dr hab. inż. Anna Jaśkiewicz}
+\streszczenie{Praca analizuje algorytmy optymalizacji dla markowskich procesów decyzyjnych z dyskontowaniem quasi-hiperbolicznym, umożliwiającym lepsze modelowanie niespójności czasowej. Celem pracy jest wyznaczenie optymalnej polityki dla decydentów.}
+\streszczenieang{The thesis analyzes optimization algorithms for Markov decision processes with quasi-hyperbolic discounting, enabling better modeling of time inconsistency. The aim is to determine the optimal policy for decision-makers.}
+\slowakluczowe{markowski proces decyzyjny, dyskontowanie quasi-hiperboliczne, wzmocnione nauczanie maszynowe}
 \slowakluczoweang{[Keywords to be completed -- up to 150 characters.]}
 
 \begin{document}
@@ -67,9 +71,9 @@
     \item[$d(t)$] -- funkcja dyskontująca
     \item[$\alpha$] -- parametr uprzedzenia teraźniejszości
     \item[$\beta$] -- współczynnik dyskontowania
-    \item[$\Pr(A)$] -- zbiór miar probabilistycznych
+    \item[$\Pr(A)$] -- zbiór miar probabilistycznych \\ na zbiorze $A$ 
     \item[$\mathcal{H}_n$] -- historie długości $n$
-    \item[$\Phi$] -- zbiór polityk historycznych
+    \item[$\Phi$] -- zbiór polityk zależnych od historii
     \item[$\Phi_m$] -- zbiór polityk markowskich
     \item[$\Phi_s$] -- zbiór polityk stacjonarnych
     \item[$\phi$] -- polityka
@@ -80,8 +84,6 @@
     \item[$\phi_\beta^\star$] -- optymalna polityka wykładnicza
     \item[$J_{\phi}^{\alpha,\beta}$] -- wartość quasi-hiperboliczna
     \item[$J_{\phi}^{\beta}$] -- wartość wykładnicza
-    \item[$V$] -- funkcja wartości
-    \item[$Q$] -- funkcja Q
     \item[$J_n$, $W_n$, $Q_n$] -- przybliżenia iteracyjne
     \item[$\rho_n^J$, $\rho_n^W$] -- wagi wiarygodności
     \item[$\eta_n$, $\theta_n$] -- kroki uczenia
@@ -117,6 +119,11 @@
 \cleardoublepage
 
 % 6. Bibliografia
+\cleardoublepage
+\phantomsection
+\addcontentsline{toc}{chapter}{Bibliografia}
+\renewcommand{\bibname}{Bibliografia}
+\renewcommand{\refname}{Bibliografia}
 \bibliographystyle{plain}
 \nocite{*}% wymuś ujęcie wszystkich pozycji z references.bib
 \bibliography{bibliography/references}

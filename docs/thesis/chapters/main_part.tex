@@ -1,7 +1,8 @@
 \chapter{Główne twierdzenia i algorytmy}
 
-\section*{Twierdzenie o redukcji polityk}
+Ten rozdział został opracowany na podstawie następujących prac i monografii \cite{eshwar2025,borkar2008,puterman2014}.
 
+\section*{Twierdzenie o redukcji polityk}
 Pierwszym kluczowym wynikiem jest pokazanie, że dowolną politykę niestacjonarną (w tym niestacjonarną markowską) można zredukować do prostszej formy: decyzja w kroku $t=0$ może być dowolna, natomiast od kroku $t\ge 1$ wystarczy rozważać politykę stacjonarną.
 
 \begin{theorem}[Redukcja polityk]
@@ -151,7 +152,7 @@ J^{\alpha, \beta}_{\phi_s}(s) &= \sum_a \phi_s(a\mid s) \left[ r(s, a) + \sum_{s
 Pierwszy algorytm pozwala na ocenę wartości zadanej polityki bez znajomości modelu środowiska. Próbki danych generowane są przez politykę próbkowania $\nu$, a korekta off-policy jest realizowana przez wagi $\frac{\mu(a\mid s)}{\nu(a\mid s)}$ oraz $\frac{\phi_s(a\mid s)}{\nu(a\mid s)}$. W szczególności wymagane jest pokrycie (coverage): $\nu(a\mid s) > 0$ dla każdej akcji, która może zostać wybrana przez $\mu$ lub $\phi_s$ w danym stanie. W tej pracy będziemy stosować $\nu$ jako politykę losową (uniform).
 \subsection{Mechanizm aktualizacji wartości i cel TD}
 
-Kluczowym elementem Algorytmu 1 jest specyficzna konstrukcja celu temporalnego (ang. \textit{TD target}) oraz wykorzystanie dwóch skal czasowych do jednoczesnej estymacji pomocniczej funkcji wartości $W$ (dla dyskontowania wykładniczego) i docelowej funkcji wartości $J$ (dla dyskontowania quasi-hiperbolicznego).
+Kluczowym elementem Algorytmu 1 jest specyficzna konstrukcja celu temporalnego (ang. \textit{TD target}) oraz wykorzystanie dwóch skal czasowych do jednoczesnej aproksymacji pomocniczej funkcji wartości $W$ (dla dyskontowania wykładniczego) i docelowej funkcji wartości $J$ (dla dyskontowania quasi-hiperbolicznego).
 
 \subsubsection*{1. Cel Temporalny (TD Target)}
 
@@ -166,7 +167,7 @@ W standardowym algorytmie Q-learning cel TD opiera się na wyrażeniu $r + \beta
 \begin{itemize}
     \item $r(s,a)$ to natychmiastowa nagroda w obecnym stanie,
     \item $-(1-\alpha)\beta r(s',a')$ to człon korygujący wynikający z definicji operatora Bellmana dla QH (Lemat 1), uwzględniający różnicę w postrzeganiu nagrody przez ,,ja'' teraźniejsze i przyszłe,
-    \item $W_n(s')$ to estymata wartości wykładniczej w następnym stanie (tzw. \textit{bootstrap}).
+    \item $W_n(s')$ to aproksymata wartości wykładniczej w następnym stanie (tzw. \textit{bootstrap}).
 \end{itemize}
 
 \subsubsection*{2. Korekta Off-Policy (Importance Sampling)}
@@ -184,27 +185,27 @@ Ponieważ próbkowanie akcji odbywa się według polityki behawioralnej $v$ (np.
     \end{equation}
 \end{itemize}
 
-Dzięki temu estymatory pozostają nieobciążone mimo generowania danych z innej polityki.
+Dzięki temu aproksymatory pozostają nieobciążone mimo generowania danych z innej polityki.
 
 \subsubsection*{3. Równania aktualizacji (Dwie skale czasowe)}
 
 Aktualizacja parametrów odbywa się w dwóch skalach czasowych, co gwarantuje stabilność zbieżności:
 
-\paragraph{Szybka skala (Estymacja $W$):} Funkcja $W_n$ jest aktualizowana z krokiem $\eta_n$. Dąży ona do wartości $J_{\phi_s}^{\alpha, \beta}$ znacznie szybciej niż $J_n$, traktując $J_n$ jako quasi-statyczne.
+\paragraph{Szybka skala (Aproksymacja $W$):} Funkcja $W_n$ jest aktualizowana z krokiem $\eta_n$. Dąży ona do wartości $J_{\phi_s}^{\alpha, \beta}$ znacznie szybciej niż $J_n$, traktując $J_n$ jako quasi-statyczne.
 
 \begin{equation}
     W_{n+1}(s) \leftarrow W_{n}(s) + \eta_{n} \left[ \rho_n^W r_{n}^{\text{target}}(s) - W_{n}(s) \right]
     \label{eq:update_W}
 \end{equation}
 
-\paragraph{Wolna skala (Estymacja $J$):} Funkcja $J_n$, będąca naszym głównym celem (wartość QH dla pary $(\mu, \phi_s)$), jest aktualizowana z mniejszym krokiem $\theta_n$. Wykorzystuje ona ten sam cel $r_n^{\text{target}}$, ale skorygowany wagą dla polityki pierwszego kroku $\mu$.
+\paragraph{Wolna skala (Aproksymacja $J$):} Funkcja $J_n$, będąca naszym głównym celem (wartość QH dla pary $(\mu, \phi_s)$), jest aktualizowana z mniejszym krokiem $\theta_n$. Wykorzystuje ona ten sam cel $r_n^{\text{target}}$, ale skorygowany wagą dla polityki pierwszego kroku $\mu$.
 
 \begin{equation}
     J_{n+1}(s) \leftarrow J_{n}(s) + \theta_{n} \\ \left[ \rho_n^J r_{n}^{\text{target}}(s) - J_{n}(s) \right]
     \label{eq:update_J}
 \end{equation}
 
-Warunek $\frac{\theta_n}{\eta_n} \rightarrow 0$ zapewnia, że błędy estymacji $W_n$ ,,wygasają'' szybciej, dostarczając stabilnego celu dla wolniejszej aktualizacji $J_n$.
+Warunek $\frac{\theta_n}{\eta_n} \rightarrow 0$ zapewnia, że błędy aproksymacji $W_n$ ,,wygasają'' szybciej, dostarczając stabilnego celu dla wolniejszej aktualizacji $J_n$.
 \subsection{Lematy i twierdzenia}
 \begin{lemma}[Kontrakcja operatora Bellmana dla QH]
 \label{thm:bellman-contraction}
@@ -257,7 +258,7 @@ Jeżeli kroki uczenia $\eta_n$, $\theta_n$ spełniają warunki Robbins--Monro:
 \begin{proof}[Szkic dowodu]
 Dowód opiera się na teorii aproksymacji stochastycznej o dwóch skalach czasowych.
 
-Wprowadźmy operator oczekiwanej aktualizacji dla $W$ oraz $J$ wynikający z równania~\eqref{eq:final-policy-eval}. Przy założeniu pokrycia ($\nu(a\mid s)>0$ tam, gdzie $\mu$ lub $\phi_s$ wybierają akcje) estymatory oparte o wagi importance sampling mają skończoną wartość oczekiwaną i są nieobciążone.
+Wprowadźmy operator oczekiwanej aktualizacji dla $W$ oraz $J$ wynikający z równania~\eqref{eq:final-policy-eval}. Przy założeniu pokrycia ($\nu(a\mid s)>0$ tam, gdzie $\mu$ lub $\phi_s$ wybierają akcje) aproksymatory oparte o wagi importance sampling mają skończoną wartość oczekiwaną i są nieobciążone.
 
 	\textbf{Szybka skala ($W_n$):} Ponieważ $\theta_n/\eta_n\to 0$, iteracja $W_n$ widzi $J_n$ jako quasi-stałe i zachowuje się jak standardowa aproksymacja stochastyczna do punktu stałego odpowiadającego wartości $J^{\alpha,\beta}_{\phi_s}$.
 
@@ -294,7 +295,7 @@ Formalizacja przebiega standardowo przez metodę ODE dla aproksymacji stochastyc
 
 W tej sekcji zdefiniujemy czym jest optymalna polityka w kontekście dyskontowania quasi-hiperbolicznego oraz przedstawimy bezmodelowy algorytm uczenia się optymalnej polityki.
 \subsection{Definicja optymalnej polityki}
-Optymalna polityka w dyskontowaniu QH to para polityk $(\mu^\star, \phi_s^\star)$ maksymalizująca wartość funkcji wartości $J^{\alpha, \beta}_{\mu, \phi_s}(s)$ dla każdego stanu $s \in S$. Formalnie:
+Optymalna polityka w dyskontowaniu QH to para optymalna, która składa się z reguły decyzyjnej dla pierwszego kroku i polityki stacjonarnej $(\mu^\star, \phi_s^\star)$ maksymalizująca wartość funkcji wartości $J^{\alpha, \beta}_{\mu, \phi_s}(s)$ dla każdego stanu $s \in S$. Formalnie:
 \begin{equation}
 (\mu^\star, \phi_s^\star) = \arg\max_{\mu \in \Phi_m} \max_{\phi_s \in \Phi_s} J^{\alpha, \beta}_{\mu, \phi_s}(s), \quad \forall s \in S.
 \end{equation}
@@ -314,7 +315,7 @@ oraz
 
 \begin{theorem}[Deterministyczna optymalna polityka]
 \label{thm:deterministic-optimal}
-Istnieje deterministyczna optymalna para $(\mu^\star, \phi_s^\star)$ taka, że
+Istnieje deterministyczna optymalna para, która składa się z reguły decyzyjnej dla pierwszego kroku i polityki stacjonarnej $(\mu^\star, \phi_s^\star)$ taka, że
 \begin{equation}
 V^{\alpha, \beta}_{\mu^\star, \phi_s^\star}(s) = \max_{\mu \in \Phi_m} \max_{\phi_s \in \Phi_s} V^{\alpha, \beta}_{\mu, \phi_s}(s), \quad \forall s \in S.
 \end{equation}
@@ -437,6 +438,6 @@ Algorytm QH Q-Learning różni się od klasycznego Q-learningu w następujących
 \begin{itemize}
 \item \textbf{Dwie funkcje Q:} QH Q-Learning utrzymuje dwie funkcje Q: $W$ dla dyskontowania wykładniczego i $Q$ dla dyskontowania quasi-hiperbolicznego.
 \item \textbf{Dwie skale czasowe:} Aktualizacje $W$ i $Q$ odbywają się z różnymi krokami uczenia, gdzie $\theta_n / \eta_n \to 0$.
-\item \textbf{Polityka dwuskładnikowa:} Wynikiem jest para $(\mu^\star, \phi_s^\star)$ zamiast pojedynczej polityki.
+\item \textbf{Polityka dwuskładnikowa:} Wynikiem jest para optymalna, która składa się z reguły decyzyjnej dla pierwszego kroku i polityki stacjonarnej $(\mu^\star, \phi_s^\star)$ zamiast pojedynczej polityki.
 \item \textbf{Niespójność czasowa:} Optymalna polityka nie jest spójna w czasie, co wymaga specjalnej interpretacji i zastosowania.
 \end{itemize}
