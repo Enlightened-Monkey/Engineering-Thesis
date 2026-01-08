@@ -41,12 +41,12 @@ Created comprehensive unit tests:
 
 ### Integration Tests
 
-**test_convergence.py**: Basic convergence test
+**examples/test_convergence.py**: Basic convergence test
 - Trains on Inventory MDP for 2M episodes
 - Compares learned Q-values to analytical solution
 - Measures errors for all state-action pairs
 
-**test_comparison.py**: Detailed comparison test
+**examples/test_comparison.py**: Detailed comparison test
 - Highlights issue target pairs (State 2, Actions 1-2)
 - Shows visit count distribution
 - Demonstrates improvement from >10.0 to <2.0 error
@@ -92,8 +92,8 @@ The implementation satisfies Robbins-Monro conditions independently for each (s,
 ```
 src/algorithms/qh_qlearning.py          | 57 ++++++++++++---
 src/tests/test_local_counters.py        | 167 new file
-test_convergence.py                     | 201 new file
-test_comparison.py                      | 247 new file
+examples/test_convergence.py            | 201 new file
+examples/test_comparison.py             | 247 new file
 docs/LOCAL_COUNT_STEP_SIZES.md          | 176 new file
 README.md                               | 3 +
 ```
