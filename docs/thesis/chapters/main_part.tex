@@ -1,23 +1,23 @@
 \chapter{Główne twierdzenia i algorytmy}
 
-Ten rozdział został opracowany na podstawie następujących prac i monografii \cite{eshwar2025,borkar2008,puterman2014}.
+Ten rozdział został opracowany na podstawie następujących prac i monografii \cite{eshwar2025,borkar2008,puterman2014,Kallenberg2022}.
 
 \section*{Twierdzenie o redukcji polityk}
-Pierwszym kluczowym wynikiem jest pokazanie, że dowolną politykę niestacjonarną (w tym niestacjonarną markowską) można zredukować do prostszej formy: decyzja w kroku $t=0$ może być dowolna, natomiast od kroku $t\ge 1$ wystarczy rozważać politykę stacjonarną.
+Pierwszym krokiem w analizie jest pokazanie, że dowolną politykę można zredukować do prostszej formy: decyzja w kroku $t=0$ może być dowolna, natomiast od kroku $t\ge 1$ wystarczy rozważać politykę stacjonarną.
 
 \begin{theorem}[Redukcja polityk]
 \label{thm:policy-reduction}
-Dla skończonego MDP o skończonych zbiorach stanów i akcji, dla dowolnej polityki niestacjonarnej $\phi = (\phi_0, \phi_1, \ldots)$ istnieje reguła pierwszego kroku $\mu$ oraz stacjonarna polityka $\phi_s$ takie, że
+Dla MDP o skończonych zbiorach stanów i akcji, dla dowolnej polityki  $\phi = (\phi_0, \phi_1, \ldots)$ istnieje reguła pierwszego kroku $\mu$ oraz stacjonarna polityka $\phi_s$ takie, że
 \[
   J_{\phi}^{\alpha,\beta}(s) = J_{(\mu,\phi_s)}^{\alpha,\beta}(s), \qquad \forall s \in S.
 \]
-W szczególności, powyższe dotyczy również polityk niestacjonarnych markowskich.
+
 \end{theorem}
 
-W pierwszym kroku stosowana jest dowolna reguła $\mu = \phi_0$, natomiast dla kroków $t \ge 1$ wystarczy rozważać politykę stacjonarną $\phi_s$. Analiza optymalności sprowadza się do klas polityk dwuskładnikowych $(\mu,\phi_s)$.
+Z Twierdzenia~\ref{thm:policy-reduction} wynika, że znalezienie optymalnej polityki sprowadza się do analizy pary składającej się z reguły decyzyjnej pierwszego kroku $\mu$ oraz stacjonarnej polityki $\phi_s$: $(\mu,\phi_s)$.
 
 \begin{proof}
-Dla dowolnej historycznej polityki $\phi = (\phi_0, \phi_1, \ldots)$ mamy
+Dla dowolnej polityki $\phi = (\phi_0, \phi_1, \ldots)$ mamy
 \[
   J_{\phi}^{\alpha,\beta}(s) = \mathbb{E}\!\left[ \sum_{t=0}^{\infty} d(t)\, r(s_t, a_t) \;\middle|\; s_0 = s \right],
 \]
@@ -44,12 +44,10 @@ Pozostała suma dyskontowana ma postać wykładniczą, więc
 \[
   \mathbb{E}\!\left[ \sum_{t=1}^{\infty} \beta^{t-1}\, r(s_t,a_t) \;\middle|\; s_1 = s' \right] = \,J_{\overrightarrow{\phi}}^{\beta}(s_1),
 \]
-gdzie $\overrightarrow{\phi} = (\phi_1, \phi_2, \ldots)$ i $J^{\beta}$ odpowiada klasycznemu dyskontowaniu wykładniczemu.
-
-Dla takiego dyskontowania, jest dobrze udowodnione\cite{puterman2014}, że istnieje stacjonarna polityka $\phi_s \in \Phi_s$, która spełnia
-\[
-  J^{\beta}_{\overrightarrow{\phi}}(s') = J^{\beta}_{\phi_s}(s'), \qquad \forall s' \in S.
-\]s
+gdzie $\overrightarrow{\phi} = (\phi_1, \phi_2, \ldots)$ i $ J^{\beta}_{\overrightarrow{\phi}}$ odpowiada klasycznemu dyskontowaniu wykładniczemu. Z Twierdzenia 9.12 w \cite{Kallenberg2022} wynika, że dla ustalonego stanu początkowego $s\in S$ i dla każdej polityki $\overrightarrow{\phi}$ istnieje polityka stacjonarna $\phi_s$ taka, że
+$$\sum_{s'} J^\beta_{\overrightarrow{\phi}}(s')q(s'|s,\phi_0(s))= 
+\sum_{s'}   J^\beta_{\phi_s} (s')q(s'|s,\phi_0(s)), $$
+gdzie $q(s'|s,\phi_0(s))=\sum\limits_a  q(s'|s,a) \phi_0(a|s).$
 
 Podstawiając do poprzedniego równania, otrzymujemy
 \[
@@ -64,16 +62,16 @@ co kończy dowód.
 \end{proof}
 
 \section{Ocena polityki}
-W niniejszej sekcji przedstawiamy bezmodelowy algorytm ewaluacji jednokrokowo niestacjonarnej polityki $(\mu, \phi_s)$ w~środowisku MDP z~dyskontowaniem quasi-hiperbolicznym. W~przeciwieństwie do dyskontowania wykładniczego, funkcja wartości $J_{\mu, \phi_s}^{\alpha, \beta}$ nie posiada prostej formy rekurencyjnej. Dlatego kluczowym krokiem jest wyprowadzenie wzoru pozwalającego wyrazić wartość tej polityki poprzez funkcję $J_{\phi_s}^{\alpha, \beta}$, która sama w~sobie spełnia już równanie rekurencyjne, co umożliwia jej wyznaczenie bez konieczności jawnego obliczania $J_{\phi_s}^{\beta}$.
+W tym rozdziale przedstawiamy algorytm wyliczenia jednokrokowej niestacjonarnej polityki $(\mu, \phi_s)$ w środowisku MDP z dyskontowaniem quasi-hiperbolicznym. W~przeciwieństwie do dyskontowania wykładniczego, funkcja wartości $J_{\mu, \phi_s}^{\alpha, \beta}$ nie posiada prostej formy rekurencyjnej.
 \subsection{Wyprowadzenie wzoru do oceny polityki}
 
-Z twierdzenia o redukcji polityk (Twierdzenie~\ref{thm:policy-reduction}):
+Z Twierdzenia~\ref{thm:policy-reduction}:
 \begin{equation}
 J^{\alpha, \beta}_{\mu, \phi_s}(s) = \sum_a \mu(a\mid s) \left[ r(s, a) + \alpha\beta \sum_{s'} q(s'\mid s, a) \, J^{\beta}_{\phi_s}(s') \right].
 \label{eq:policy-eval-start}
 \end{equation}
 
-Celem jest wyrażenie zależności wyłącznie przez $J^{\alpha, \beta}_{\phi_s}(s')$, bez jawnego $J^{\beta}$.
+Celem jest wyrażenie   $J^{\alpha, \beta}_{\mu, \phi_s}(s)$ przez $J^{\alpha, \beta}_{\phi_s}(s')$.
 \par\noindent\textbf{Definicje dla polityki stacjonarnej.}\par
 
 Dyskontowanie wykładnicze:
@@ -83,13 +81,13 @@ J^{\beta}_{\phi_s}(s') = \mathbb{E}_{\phi_s} [r(s', \cdot)] + \beta \mathbb{E}_{
 \end{equation}
  gdzie $\mathbb{E}_{\phi_s} [r(s', \cdot)] = \sum_{a'} \phi_s(a'\mid s') \, r(s', a')$ \\ $\mathbb{E}_{\phi_s,q}[J^{\beta}_{\phi_s}(s'')\mid s'] = \sum_{a'} \phi_s(a'\mid s') \sum_{s''} q(s''\mid s', a') J^{\beta}_{\phi_s}(s'')$.
 
-Quasi-hiperboliczne:
+Dyskontowanie quasi-hiperboliczne:
 \begin{equation}
 J^{\alpha, \beta}_{\phi_s}(s') = \mathbb{E}_{\phi_s} [r(s', \cdot)] + \alpha \beta \mathbb{E}_{\phi_s, q} [J^{\beta}_{\phi_s}(s'') \mid s'].
 \label{eq:qh-value-stat}
 \end{equation}
 
-\par\noindent\textbf{Izolacja $\alpha \beta J^{\beta}_{\phi_s}(s')$.}\par
+\par\noindent\textbf{Obliczenia:}\par
 
 Pomnóżmy równanie~\eqref{eq:exp-value} przez $\alpha \beta$:
 \begin{equation}
@@ -103,32 +101,32 @@ Pomnóżmy równanie~\eqref{eq:qh-value-stat} przez $\beta$:
 \label{eq:mult-b}
 \end{equation}
 
-Odejmując równanie~\eqref{eq:mult-b} od równania~\eqref{eq:mult-ab}:
+Odejmując równanie~\eqref{eq:mult-b} od równania~\eqref{eq:mult-ab} otrzymujemy:
 \begin{equation}
 \alpha \beta J^{\beta}_{\phi_s}(s') - \beta J^{\alpha, \beta}_{\phi_s}(s') = \alpha \beta \mathbb{E}_{\phi_s} [r(s', \cdot)] - \beta \mathbb{E}_{\phi_s} [r(s', \cdot)].
 \end{equation}
 
-Przekształcamy:
+oraz:
 \begin{equation}
 \alpha \beta J^{\beta}_{\phi_s}(s') = \beta J^{\alpha, \beta}_{\phi_s}(s') - (1 - \alpha) \beta \mathbb{E}_{\phi_s} [r(s', \cdot)].
 \label{eq:isolated}
 \end{equation}
 
-Podstawiając równanie~\eqref{eq:isolated} do równania~\eqref{eq:policy-eval-start}:
+Podstawiając równanie~\eqref{eq:isolated} do równania~\eqref{eq:policy-eval-start} dostajemy:
 \begin{align}
 J^{\alpha, \beta}_{\mu, \phi_s}(s) &= \sum_a \mu(a\mid s) \left[ r(s, a) + \sum_{s'} q(s'\mid s, a) \left[ -(1 - \alpha)\beta \sum_{a'} \phi_s(a'\mid s') r(s', a') + \beta J^{\alpha, \beta}_{\phi_s}(s') \right] \right].
 \label{eq:final-policy-eval}
 \end{align}
-W szczególności, dla oceny samej polityki stacjonarnej $\phi_s$ (tj. dla pary $(\mu,\phi_s)$ z $\mu=\phi_s$) otrzymujemy:
+W szczególności, jeśli $\mu$ zastąpimy przez $\phi_s$ otrzymujemy:
 \begin{align}
 J^{\alpha, \beta}_{\phi_s}(s) &= \sum_a \phi_s(a\mid s) \left[ r(s, a) + \sum_{s'} q(s'\mid s, a) \left[ -(1 - \alpha)\beta \sum_{a'} \phi_s(a'\mid s') r(s', a') + \beta J^{\alpha, \beta}_{\phi_s}(s') \right] \right].
 \label{eq:final-policy-eval-stationary}
 \end{align}
 
-\subsection{Algorytm 1: Bezmodelowa ocena polityki dla dyskontowania QH}
+\subsection{Algorytm 1: Obliczenie funkcji wartości dla dyskontowania QH}
 
 \begin{algorithm}[H] \
-\caption{Bezmodelowa ocena polityki dla dyskontowania QH \cite{eshwar2025}}
+\caption{Obliczenie funkcji wartości dla dyskontowania QH \cite{eshwar2025}}
 \label{alg:policy-eval}
 \begin{algorithmic}[1]
 \STATE \textbf{Wymagania:} Kroki uczenia $(\eta_n)$, $(\theta_n)$; współczynniki dyskontowania $\alpha$, $\beta$; polityka próbkowania $\nu$; polityki oceniane $\mu$, $\phi_s$
@@ -149,14 +147,14 @@ J^{\alpha, \beta}_{\phi_s}(s) &= \sum_a \phi_s(a\mid s) \left[ r(s, a) + \sum_{s
 \end{algorithm}
 
 
-Pierwszy algorytm pozwala na ocenę wartości zadanej polityki bez znajomości modelu środowiska. Próbki danych generowane są przez politykę próbkowania $\nu$, a korekta off-policy jest realizowana przez wagi $\frac{\mu(a\mid s)}{\nu(a\mid s)}$ oraz $\frac{\phi_s(a\mid s)}{\nu(a\mid s)}$. W szczególności wymagane jest pokrycie (coverage): $\nu(a\mid s) > 0$ dla każdej akcji, która może zostać wybrana przez $\mu$ lub $\phi_s$ w danym stanie. W tej pracy będziemy stosować $\nu$ jako politykę losową (uniform).
+Pierwszy algorytm pozwala na obliczenie funkcji wartości dla danej polityki bez znajomości modelu środowiska. Próbki danych generowane są przez politykę próbkowania $\nu$, a korekta off-policy jest realizowana przez wagi $\frac{\mu(a\mid s)}{\nu(a\mid s)}$ oraz $\frac{\phi_s(a\mid s)}{\nu(a\mid s)}$. W szczególności wymagane jest pokrycie: $\nu(a\mid s) > 0$ dla każdej akcji, która może zostać wybrana przez $\mu$ lub $\phi_s$ w danym stanie. W tej pracy będziemy stosować $\nu$ o rozkładzie jednostajnym.
 \subsection{Mechanizm aktualizacji wartości i cel TD}
 
-Kluczowym elementem Algorytmu 1 jest specyficzna konstrukcja celu temporalnego (ang. \textit{TD target}) oraz wykorzystanie dwóch skal czasowych do jednoczesnej aproksymacji pomocniczej funkcji wartości $W$ (dla dyskontowania wykładniczego) i docelowej funkcji wartości $J$ (dla dyskontowania quasi-hiperbolicznego).
+Kluczowym elementem Algorytmu 1 jest specyficzna konstrukcja celu TD (ang. \textit{Temporal Difference target}) oraz wykorzystanie dwóch skal czasowych do jednoczesnej aproksymacji pomocniczej funkcji wartości $W$ (dla dyskontowania wykładniczego) i docelowej funkcji wartości $J$ (dla dyskontowania quasi-hiperbolicznego).
 
-\subsubsection*{1. Cel Temporalny (TD Target)}
+\subsubsection*{1. Cel TD}
 
-W standardowym algorytmie Q-learning cel TD opiera się na wyrażeniu $r + \beta \max Q$. W przypadku dyskontowania quasi-hiperbolicznego, ze względu na strukturę równania rekurencyjnego (3.8), cel aktualizacji musi uwzględniać korektę nagrody w następnym kroku. Cel $r_n^{\text{target}}$ w $n$-tej iteracji definiujemy jako:
+W standardowym algorytmie Q-learning cel TD opiera się na wyrażeniu $r + \beta \max Q$. W przypadku dyskontowania quasi-hiperbolicznego, ze względu na strukturę równania rekurencyjnego (3.8), aktualzacja celu musi uwzględniać korektę nagrody w następnym kroku. Cel $r_n^{\text{target}}$ w $n$-tej iteracji definiujemy jako:
 
 \begin{equation}
     r_n^{\text{target}}(s) = r(s,a) - (1-\alpha)\beta r(s',a') + \beta W_n(s')
@@ -166,16 +164,16 @@ W standardowym algorytmie Q-learning cel TD opiera się na wyrażeniu $r + \beta
 \noindent gdzie:
 \begin{itemize}
     \item $r(s,a)$ to natychmiastowa nagroda w obecnym stanie,
-    \item $-(1-\alpha)\beta r(s',a')$ to człon korygujący wynikający z definicji operatora Bellmana dla QH (Lemat 1), uwzględniający różnicę w postrzeganiu nagrody przez ,,ja'' teraźniejsze i przyszłe,
-    \item $W_n(s')$ to aproksymata wartości wykładniczej w następnym stanie (tzw. \textit{bootstrap}).
+    \item $-(1-\alpha)\beta r(s',a')$ to człon korygujący wynikający z definicji operatora Bellmana dla QH Lematu \ref{thm:bellman-contraction}, uwzględniający różnicę w postrzeganiu nagrody przez ,,ja'' teraźniejsze i przyszłe,
+    \item $W_n(s')$ to przybliżona funkcja wartości wykładniczej w następnym stanie.
 \end{itemize}
 
 \subsubsection*{2. Korekta Off-Policy (Importance Sampling)}
 
-Ponieważ próbkowanie akcji odbywa się według polityki behawioralnej $v$ (np. jednostajnej), a chcemy ocenić polityki docelowe $\mu$ oraz $\phi_s$, stosujemy wagi wiarygodności (ang. \textit{importance sampling ratios}):
+Skoro próbkowanie akcji odbywa się według polityki behawioralnej $v$ (Rozkład jednostajny), to chcemy ocenić politykę złożoną z $\mu$ oraz $\phi_s$, stosujemy wagi wiarygodności (ang. \textit{importance sampling ratios}):
 
 \begin{itemize}
-    \item Dla aktualizacji $W$ (związanej z polityką $\phi_s$):
+    \item Do aktualizacji $W$ (związanej z polityką $\phi_s$):
     \begin{equation}
         \rho_n^W = \frac{\phi_s(a|s)}{v(a|s)}
     \end{equation}
@@ -185,27 +183,25 @@ Ponieważ próbkowanie akcji odbywa się według polityki behawioralnej $v$ (np.
     \end{equation}
 \end{itemize}
 
-Dzięki temu aproksymatory pozostają nieobciążone mimo generowania danych z innej polityki.
-
 \subsubsection*{3. Równania aktualizacji (Dwie skale czasowe)}
 
 Aktualizacja parametrów odbywa się w dwóch skalach czasowych, co gwarantuje stabilność zbieżności:
 
-\paragraph{Szybka skala (Aproksymacja $W$):} Funkcja $W_n$ jest aktualizowana z krokiem $\eta_n$. Dąży ona do wartości $J_{\phi_s}^{\alpha, \beta}$ znacznie szybciej niż $J_n$, traktując $J_n$ jako quasi-statyczne.
+\paragraph{Szybka skala (Aproksymacja $W$):} Funkcja $W_n$ jest aktualizowana z krokiem $\eta_n$ i dąży ona do wartości $J_{\phi_s}^{\alpha, \beta}$.
 
 \begin{equation}
-    W_{n+1}(s) \leftarrow W_{n}(s) + \eta_{n} \left[ \rho_n^W r_{n}^{\text{target}}(s) - W_{n}(s) \right]
+    W_{n+1}(s) \leftarrow W_{n}(s) + \eta_{n} \left[ \rho_n^W r_{n}^{\text{target}}(s) - W_{n}(s) \right].
     \label{eq:update_W}
 \end{equation}
 
 \paragraph{Wolna skala (Aproksymacja $J$):} Funkcja $J_n$, będąca naszym głównym celem (wartość QH dla pary $(\mu, \phi_s)$), jest aktualizowana z mniejszym krokiem $\theta_n$. Wykorzystuje ona ten sam cel $r_n^{\text{target}}$, ale skorygowany wagą dla polityki pierwszego kroku $\mu$.
 
 \begin{equation}
-    J_{n+1}(s) \leftarrow J_{n}(s) + \theta_{n} \\ \left[ \rho_n^J r_{n}^{\text{target}}(s) - J_{n}(s) \right]
+    J_{n+1}(s) \leftarrow J_{n}(s) + \theta_{n} \\ \left[ \rho_n^J r_{n}^{\text{target}}(s) - J_{n}(s) \right].
     \label{eq:update_J}
 \end{equation}
 
-Warunek $\frac{\theta_n}{\eta_n} \rightarrow 0$ zapewnia, że błędy aproksymacji $W_n$ ,,wygasają'' szybciej, dostarczając stabilnego celu dla wolniejszej aktualizacji $J_n$.
+Warunek $\frac{\theta_n}{\eta_n} \to 0$ gwarantuje separację skal czasowych. Dzięki temu proces $W_n$ zbiega asymptotycznie szybciej i z perspektywy wolniejszej iteracji $J_n$ może być traktowany jako quasi-stacjonarny.
 \subsection{Lematy i twierdzenia}
 \begin{lemma}[Kontrakcja operatora Bellmana dla QH]
 \label{thm:bellman-contraction}
@@ -213,7 +209,7 @@ Definiujemy operator $T^{\phi_s}: \mathbb{R}^{|S|} \to \mathbb{R}^{|S|}$:
 \begin{equation}
 (T^{\phi_s} J)(s) = \sum_a \phi_s(a\mid s) \left[ r(s, a) + \sum_{s'} q(s'\mid s, a) \left[ -(1 - \alpha)\beta \sum_{a'} \phi_s(a'\mid s') r(s', a') + \beta J(s') \right] \right].
 \end{equation}
-Wtedy operator $T^{\phi_s}$ jest kontrakcją w normie $\max$ ze współczynnikiem dyskontowania $\beta < 1$. Jedyny punkt stały $J = T^{\phi_s} J$ to $J^{\alpha, \beta}_{\phi_s}$.
+Wtedy operator $T^{\phi_s}$ jest kontrakcją w normie $\max$ ze współczynnikiem dyskontowania $\beta < 1$. Istnieje jedyny punkt stały $J = T^{\phi_s} J$, $J$=$J^{\alpha, \beta}_{\phi_s}$.
 \end{lemma}
 \begin{proof}
 Pokażemy, że $T^{\phi_s}$ jest kontrakcją w normie $\|\cdot\|_\infty$.
@@ -240,13 +236,13 @@ Maksymalizując po $s \in S$, dostajemy
 \[
 \|T^{\phi_s}J_1 - T^{\phi_s}J_2\|_\infty \leq \beta\,\|J_1 - J_2\|_\infty.
 \]
-Zatem dla $\beta \in [0,1)$ operator $T^{\phi_s}$ jest kontrakcją z faktorem $\beta$.
+Zatem dla $\beta \in [0,1)$ operator $T^{\phi_s}$ jest kontrakcją ze współczynnikiem $\beta$.
 Z twierdzenia Banacha o punkcie stałym wynika istnienie i jednoznaczność punktu stałego $J^*$ takiego, że $T^{\phi_s}J^* = J^*$. Ponieważ równanie $J = T^{\phi_s}J$ jest równaniem Bellmana dla wartości QH przy polityce $\phi_s$, tym punktem stałym jest $J^{\alpha,\beta}_{\phi_s}$.
 \end{proof}
 
-\subsubsection{Konwergencja algorytmu}
+\subsubsection{Zbieżność algorytmu}
 
-\begin{theorem}[Konwergencja Algorytmu~\ref{alg:policy-eval}]
+\begin{theorem}[Zbieżność Algorytmu~\ref{alg:policy-eval}]
 \label{thm:policy-eval-conv}
 Jeżeli kroki uczenia $\eta_n$, $\theta_n$ spełniają warunki Robbins--Monro:
 \[
@@ -255,55 +251,32 @@ Jeżeli kroki uczenia $\eta_n$, $\theta_n$ spełniają warunki Robbins--Monro:
  oraz dodatkowo $\frac{\theta_n}{\eta_n} \to 0$ (dwie skale czasowe), to ciągi $(W_n, J_n)$ są zbieżne prawie na pewno do $(J^{\alpha, \beta}_{\phi_s}, J^{\alpha, \beta}_{\mu, \phi_s})$.
 \end{theorem}
 
-\begin{proof}[Szkic dowodu]
-Dowód opiera się na teorii aproksymacji stochastycznej o dwóch skalach czasowych.
+Dowód Twierdzenia ~\ref{thm:policy-eval-conv} jest umieszczony w pracy \cite{eshwar2025}, jest on oparty o stochastyczną aproksymację \cite{borkar2008}
+% \begin{proof}[Szkic dowodu]
+% Dowód opiera się na teorii aproksymacji stochastycznej o dwóch skalach czasowych.
 
-Wprowadźmy operator oczekiwanej aktualizacji dla $W$ oraz $J$ wynikający z równania~\eqref{eq:final-policy-eval}. Przy założeniu pokrycia ($\nu(a\mid s)>0$ tam, gdzie $\mu$ lub $\phi_s$ wybierają akcje) aproksymatory oparte o wagi importance sampling mają skończoną wartość oczekiwaną i są nieobciążone.
+% Wprowadźmy operator oczekiwanej aktualizacji dla $W$ oraz $J$ wynikający z równania~\eqref{eq:final-policy-eval}. Przy założeniu pokrycia ($\nu(a\mid s)>0$ tam, gdzie $\mu$ lub $\phi_s$ wybierają akcje) aproksymatory oparte o wagi importance sampling mają skończoną wartość oczekiwaną i są nieobciążone.
 
-	\textbf{Szybka skala ($W_n$):} Ponieważ $\theta_n/\eta_n\to 0$, iteracja $W_n$ widzi $J_n$ jako quasi-stałe i zachowuje się jak standardowa aproksymacja stochastyczna do punktu stałego odpowiadającego wartości $J^{\alpha,\beta}_{\phi_s}$.
+% 	\textbf{Szybka skala ($W_n$):} Ponieważ $\theta_n/\eta_n\to 0$, iteracja $W_n$ widzi $J_n$ jako quasi-stałe i zachowuje się jak standardowa aproksymacja stochastyczna do punktu stałego odpowiadającego wartości $J^{\alpha,\beta}_{\phi_s}$.
 
-	\textbf{Wolna skala ($J_n$):} W granicy $W_n \approx J^{\alpha,\beta}_{\phi_s}$, iteracja $J_n$ jest aproksymacją stochastyczną do równania liniowego z punktem stałym $J^{\alpha,\beta}_{\mu,\phi_s}$.
+% 	\textbf{Wolna skala ($J_n$):} W granicy $W_n \approx J^{\alpha,\beta}_{\phi_s}$, iteracja $J_n$ jest aproksymacją stochastyczną do równania liniowego z punktem stałym $J^{\alpha,\beta}_{\mu,\phi_s}$.
 
-Formalizacja przebiega standardowo przez metodę ODE dla aproksymacji stochastycznej z dwoma krokami uczenia i wykorzystuje fakt, że odpowiadające układy deterministyczne mają jednoznaczne globalnie asymptotycznie stabilne punkty stałe.
-\end{proof}
-
-% \subsubsection{Twierdzenie o zbieżności polityk}
-
-% \begin{theorem}[Zbieżność iteracji polityk]
-% \label{thm:policy-convergence}
-% Niech $(J_n)$ będzie ciągiem zdefiniowanym rekurencyjnie przez
-% \[
-% J_{n+1} = T^{\phi_s} J_n, \quad n = 0, 1, 2, \ldots
-% \]
-%  dla dowolnego $J_0 \in \mathbb{R}^{|S|}$. Wówczas
-% \[
-% \lim_{n \to \infty} J_n = J^{\alpha, \beta}_{\phi_s}.
-% \]
-% \end{theorem}
-
-% \begin{proof}
-% Z Lematu~\ref{thm:bellman-contraction} wiemy, że $T^{\phi_s}$ jest kontrakcją z faktorem $\beta < 1$. Z twierdzenia Banacha o punkcie stałym dla przestrzeni zupełnych wynika, że dla dowolnego punktu startowego $J_0$, iteracje $J_{n+1} = T^{\phi_s} J_n$ zbiegają do jedynego punktu stałego $J^{\alpha, \beta}_{\phi_s}$.
-
-% Dokładniej, mamy oszacowanie błędu:
-% \[
-% \|J_n - J^{\alpha, \beta}_{\phi_s}\|_\infty \leq \beta^n \|J_0 - J^{\alpha, \beta}_{\phi_s}\|_\infty,
-% \]
-% co pokazuje wykładniczą szybkość zbieżności.
+% Formalizacja przebiega standardowo przez metodę ODE dla aproksymacji stochastycznej z dwoma krokami uczenia i wykorzystuje fakt, że odpowiadające układy deterministyczne mają jednoznaczne globalnie asymptotycznie stabilne punkty stałe.
 % \end{proof}
 
 \section{Znajdowanie optymalnej polityki}
 
-W tej sekcji zdefiniujemy czym jest optymalna polityka w kontekście dyskontowania quasi-hiperbolicznego oraz przedstawimy bezmodelowy algorytm uczenia się optymalnej polityki.
+W tej sekcji zdefiniujemy czym jest optymalna polityka w kontekście dyskontowania quasi-hiperbolicznego oraz przedstawimy algorytm uczenia się optymalnej polityki bez znajomości środowiska modelu.
 \subsection{Definicja optymalnej polityki}
 Optymalna polityka w dyskontowaniu QH to para optymalna, która składa się z reguły decyzyjnej dla pierwszego kroku i polityki stacjonarnej $(\mu^\star, \phi_s^\star)$ maksymalizująca wartość funkcji wartości $J^{\alpha, \beta}_{\mu, \phi_s}(s)$ dla każdego stanu $s \in S$. Formalnie:
 \begin{equation}
 (\mu^\star, \phi_s^\star) = \arg\max_{\mu \in \Phi_m} \max_{\phi_s \in \Phi_s} J^{\alpha, \beta}_{\mu, \phi_s}(s), \quad \forall s \in S.
 \end{equation}
 
-Żeby uzyskać optymalną politykę, wystarczy rozważać polityki postaci $(\mu, \phi_s)$ zgodnie z Twierdzeniem~\ref{thm:policy-reduction}.
+Zatem aby uzyskać uzyskać optymalną politykę, wystarczy rozważać $(\mu, \phi_s)$ zgodnie z Twierdzeniem~\ref{thm:policy-reduction}.
 
 $J^{\alpha, \beta}_{\mu^\star, \phi_s^\star}(s)$ = $\max\limits_{\mu,\phi_s} J^{\alpha, \beta}_{\mu, \phi_s}(s)$ = $\max\limits_{\mu,\phi_s} \sum\limits_a \mu(a\mid s) \left[ r(s, a) + \alpha\beta \sum\limits_{s'} q(s'\mid s, a) J^{\beta}_{\phi_s}(s') \right]$=\\= $\max\limits_{\mu} \sum\limits_a \mu(a\mid s) \left[ r(s, a) + \alpha\beta \sum\limits_{s'} q(s'\mid s, a) \max\limits_{\phi_s} J^{\beta}_{\phi_s}(s') \right]$. \\
-Jako iż $\max\limits_{\phi_s} J^{\beta}_{\phi_s}(s)$ odpowiada optymalnej polityce dla dyskontowania wykładniczego, zapisujemy optymalną politykę jako $\phi^\star_\beta$. Konsekwentnie, optymalna polityka dla dyskontowania QH jest dana przez 
+Jako iż $\max\limits_{\phi_s} J^{\beta}_{\phi_s}(s)$ odpowiada maksymalnej wartości funkcji celu z dyskontowaniem wykładniczym, to zapisujemy optymalną politykę jako $\phi^\star_\beta$. Konsekwentnie, optymalna polityka dla dyskontowania QH jest dana przez 
 \[
 \phi_s^\star = \phi^\star_\beta,
 \]
@@ -317,21 +290,21 @@ oraz
 \label{thm:deterministic-optimal}
 Istnieje deterministyczna optymalna para, która składa się z reguły decyzyjnej dla pierwszego kroku i polityki stacjonarnej $(\mu^\star, \phi_s^\star)$ taka, że
 \begin{equation}
-V^{\alpha, \beta}_{\mu^\star, \phi_s^\star}(s) = \max_{\mu \in \Phi_m} \max_{\phi_s \in \Phi_s} V^{\alpha, \beta}_{\mu, \phi_s}(s), \quad \forall s \in S.
+V^{\alpha, \beta}_{\mu^\star, \phi_s^\star}(s) = \max_{\mu} \max_{\phi_s} V^{\alpha, \beta}_{\mu, \phi_s}(s), \quad \forall s \in S.
 \end{equation}
-Zatem, jest wystarczające rozważać jedynie polityki deterministyczne przy poszukiwaniu optymalnej pary.
+Zauważmy, że para $(\mu^\star, \phi_s^\star)$ jest polityką deterministyczną markowską w MDP.
 \end{theorem}
 \begin{proof}
-Najpierw musimy pokazać, że $\phi_s^\star$ może być wybrana jako deterministyczna. Dla dyskontowania wykładniczego jest dobrze znane, że istnieje optymalna polityka deterministyczna $\phi_\beta^\star$. Zatem skoro ustaliliśmy, że $\phi_s^\star = \phi_\beta^\star$, to $\phi_s^\star$ jest deterministyczna. \\
+Najpierw musimy pokazać, że $\phi_s^\star$ może być wybrana jako deterministyczna. Dla dyskontowania wykładniczego z rozdziału 62.4 w \cite{puterman2014} optymalna polityka deterministyczna $\phi_\beta^\star$. Zatem skoro ustaliliśmy, że $\phi_s^\star = \phi_\beta^\star$, to $\phi_s^\star$ jest deterministyczna. \\
 Następnym krokiem jest pokazanie, że $\mu^\star*$ również jest deterministyczna. Z definicji $\mu^\star$ mamy
 \[\mu^\star(s) = \arg\max_{\mu}\sum\limits_{a}\mu(a\mid s) \left[ r(s, a) + \alpha \beta \sum_{s'} q(s'\mid s, a) J^{\beta}_{\phi^\star_s}(s') \right].\]
 Polityka $\phi_s^\star$ jest deterministyczna, zatem funkcja wartości $J^\beta_{\phi_s^\star}(s)$ jest dobrze zdefiniowana. Wyrażenie wewnątrz maksymalizacji jest liniową funkcją od $\mu$, a skoro $\mu$ jest rozkładem prawdopodobieństwa, to maksymalizacja jest osiągana przez wybór akcji $a^\star$ maksymalizującej wyrażenie w nawiasie. Zatem $\mu^\star$ może być wybrana jako deterministyczna, wybierając akcję $a^\star$ z $q(a^\star \mid s)=1$ dla każdego stanu $s$. \\
 W ten sposób pokazaliśmy, że zarówno $\phi_s^\star$, jak i $\mu^\star$ mogą być wybrane jako polityki deterministyczne, co kończy dowód.
 \end{proof}
 
-\subsection{Algorytm 2: QH Q-Learning (Bezmodelowy)}
+\subsection{Algorytm 2: QH Q-Learning}
 
-Drugi algorytm pozwala na znalezienie optymalnej polityki bez znajomości modelu środowiska. Tzn. znajdujemy optymalną parę polityk $(\mu^\star, \phi_s^\star)$ maksymalizującą wartość funkcji wartości $J^{\alpha, \beta}_{\mu, \phi_s}(s)$ dla każdego stanu $s \in S$ bazując jedynie na próbkach doświadczeń z interakcji ze środowiskiem, nie znając przejść $q$ ani funkcji nagród $r$.\\
+Drugi algorytm pozwala na znalezienie optymalnej polityki bez znajomości środowiska modelu. Tzn. znajdujemy optymalną parę polityk $(\mu^\star, \phi_s^\star)$ maksymalizującą wartość funkcji wartości $J^{\alpha, \beta}_{\mu, \phi_s}(s)$ dla każdego stanu $s \in S$ bazując jedynie na próbkach doświadczeń z interakcji ze środowiskiem, nie znając przejść $q$ ani funkcji nagród $r$.\\
 Do tego celu definiujemy funkcję Q dla danej pary polityk $(\mu, \phi_s)$, która spełnia właściwość:
 \begin{equation}
 Q^{\alpha, \beta}_{\mu, \phi_s}(s,a) = (1-\alpha) r(s,a) + \alpha Q^{\beta}_{\mu,\phi_s}(s,a),
