@@ -96,6 +96,10 @@ class QHQLearningTorch:
         fill = torch.tensor(float(init_value), device=self.device, dtype=self.dtype)
         self.W = fill.repeat(self.n_states, self.n_actions).reshape(self.n_states, self.n_actions).clone()
         self.Q = fill.repeat(self.n_states, self.n_actions).reshape(self.n_states, self.n_actions).clone()
+        
+        # Cache for optimization
+        self._cached_mask = None
+        self._cached_neg_inf = None
 
     @staticmethod
     def _robbins_monro_schedule(initial: float, exponent: float, offset: float) -> StepSchedule:
@@ -132,7 +136,7 @@ class QHQLearningTorch:
         *,
         available_actions_mask=None,
     ) -> Tuple[float, float]:
-        """Apply one batched update.
+        """Apply one batched update (optimized for performance).
 
         Args:
             states: int tensor [B]
@@ -146,19 +150,30 @@ class QHQLearningTorch:
 
         Returns:
             (eta_n, theta_n) used for this batch.
+        
+        Optimizations:
+            - Minimizes tensor allocations by reusing scalars
+            - Uses in-place operations where safe
+            - Caches frequently accessed tensors (mask, neg_inf)
+            - Optimized tensor conversions
         """
 
         torch = _require_torch()
         eta_n, theta_n = self._next_stepsizes()
-        eta = torch.tensor(eta_n, device=self.device, dtype=self.dtype)
-        theta = torch.tensor(theta_n, device=self.device, dtype=self.dtype)
+        
+        # Optimization: Reuse scalars instead of creating new tensors each time
+        eta_scalar = float(eta_n)
+        theta_scalar = float(theta_n)
 
-        states = torch.as_tensor(states, device=self.device)
-        actions = torch.as_tensor(actions, device=self.device)
+        # Optimization: More efficient tensor conversion using torch.as_tensor (no copy if possible)
+        # and explicit dtype/device specification
+        states = torch.as_tensor(states, device=self.device, dtype=torch.long)
+        actions = torch.as_tensor(actions, device=self.device, dtype=torch.long)
         rewards = torch.as_tensor(rewards, device=self.device, dtype=self.dtype)
-        next_states = torch.as_tensor(next_states, device=self.device)
+        next_states = torch.as_tensor(next_states, device=self.device, dtype=torch.long)
+        
         if dones is None:
-            dones = torch.zeros_like(states, dtype=torch.bool, device=self.device)
+            dones = torch.zeros(len(states), dtype=torch.bool, device=self.device)
         else:
             dones = torch.as_tensor(dones, device=self.device, dtype=torch.bool)
 
@@ -169,27 +184,45 @@ class QHQLearningTorch:
         # Compute max_a' W[s',a'] with optional feasibility mask
         w_next_all = self.W[next_states]  # [B, A]
 
+        # Optimization: Cache mask and neg_inf as instance variables if mask is provided
         if available_actions_mask is not None:
-            mask = torch.as_tensor(available_actions_mask, device=self.device, dtype=torch.bool)
-            mask_next = mask[next_states]  # [B, A]
-            neg_inf = torch.tensor(-1.0e30, device=self.device, dtype=self.dtype)
-            w_next_all = torch.where(mask_next, w_next_all, neg_inf)
+            # Convert mask once and cache it
+            if not hasattr(self, '_cached_mask') or self._cached_mask is None:
+                self._cached_mask = torch.as_tensor(available_actions_mask, device=self.device, dtype=torch.bool)
+            if not hasattr(self, '_cached_neg_inf'):
+                self._cached_neg_inf = torch.tensor(-1.0e30, device=self.device, dtype=self.dtype)
+            
+            mask_next = self._cached_mask[next_states]  # [B, A]
+            w_next_all = torch.where(mask_next, w_next_all, self._cached_neg_inf)
 
         max_w_next = torch.max(w_next_all, dim=1).values
-        max_w_next = torch.where(dones, torch.zeros_like(max_w_next), max_w_next)
+        # Optimization: Use scalar 0.0 instead of torch.zeros_like
+        max_w_next = torch.where(dones, torch.tensor(0.0, device=self.device, dtype=self.dtype), max_w_next)
 
+        # Optimization: Compute updates with scalar multiplication (faster than tensor ops)
         td_error_w = rewards + self.beta * max_w_next - w_prev
-        w_new = w_prev + eta * td_error_w
+        w_new = w_prev + eta_scalar * td_error_w
 
-        # Commit W updates
+        # Commit W updates (in-place)
         self.W[states, actions] = w_new
 
+        # Optimization: Use scalar operations for quasi-hyperbolic target
         qh_target = (1.0 - self.alpha) * rewards + self.alpha * w_new
         td_error_q = qh_target - q_prev
-        q_new = q_prev + theta * td_error_q
+        q_new = q_prev + theta_scalar * td_error_q
 
+        # Commit Q updates (in-place)
         self.Q[states, actions] = q_new
         return eta_n, theta_n
+
+    def clear_cache(self) -> None:
+        """Clear cached tensors to free memory.
+        
+        Call this if you need to change the action mask or free GPU memory.
+        The cache will be rebuilt on the next update_batch call if needed.
+        """
+        self._cached_mask = None
+        self._cached_neg_inf = None
 
     def update(self, state: int, action: int, reward: float, next_state: int, eta_n: float, theta_n: float) -> None:
         """Apply single-transition update with external step sizes.
