@@ -16,7 +16,7 @@ Model markowskiego procesu decyzyjnego (MDP) z dyskontowaniem quasi-hiperboliczn
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.8\textwidth]{/run/media/mwrona/Nowy/Engineering-Thesis/docs/thesis/fig/schematRL.png}
+    \includegraphics[width=0.8\textwidth]{fig/schematRL.png}
     \caption{Struktura interakcji agent--środowisko w markowskim procesie decyzyjnym.}
     \label{fig:mdp-structure}
 \end{figure}
@@ -73,7 +73,7 @@ W przeciwieństwie do wykładniczego dyskontowania, gdzie $d(t) = \beta^t$, dysk
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.8\textwidth]{/run/media/mwrona/Nowy/Engineering-Thesis/docs/plots/qh_discounting_comparison.png}
+    \includegraphics[width=0.8\textwidth]{../plots/qh_discounting_comparison.png}
     \caption{Porównanie funkcji dyskontowania quasi-hiperbolicznego dla różnych wartości parametru $\alpha$ przy stałym $\beta = 0.95$.}
     \label{fig:qh-discounting-comparison}
 \end{figure}
@@ -90,7 +90,7 @@ Nagroda za każde jabłko wynosi 1. Zatem nagroda za jedno jabłko w danym czasi
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.8\textwidth]{/run/media/mwrona/Nowy/Engineering-Thesis/docs/plots/qh_discounting_comparison_apple.png}
+    \includegraphics[width=0.8\textwidth]{../plots/qh_discounting_comparison_apple.png}
     \caption{Porównanie funkcji dyskontowania nagrody za jedno jabłko dla obu decydentów.}
     \label{fig:qh-discounting-comparison_apple}
 \end{figure}
@@ -99,7 +99,7 @@ Nagroda za każde jabłko wynosi 1. Zatem nagroda za jedno jabłko w danym czasi
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.8\textwidth]{/run/media/mwrona/Nowy/Engineering-Thesis/docs/plots/choice_apple.png}
+    \includegraphics[width=0.8\textwidth]{../plots/choice_apple.png}
     \caption{Wartości zdyskontowane nagród dla obu decydentów w dwóch scenariuszach.}
     \label{fig:choice-apple}
 \end{figure}
@@ -146,7 +146,7 @@ Normalizujemy te kategorie do przedziału $[0,1]$ poprzez odwzorowanie $\text{le
 gdzie $\sigma(x; k, x_0) = \tfrac{1}{2(1 + e^{-k(x - x_0)})} + 0.5$ jest przesuniętą funkcją sigmoidalną. Wiek i cena produktu są proporcjonalne do cierpliwości kupującego (większe $\alpha$), a majątek odwrotnie proporcjonalny.
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.75\textwidth]{/run/media/mwrona/Nowy/Engineering-Thesis/docs/plots/Sigmoid_alpha.png}
+    \includegraphics[width=0.75\textwidth]{../plots/Sigmoid_alpha.png}
     \caption{Funkcja sigmoidalna wyznaczająca parametr $\alpha$ w zależności od znormalizowanego wyniku \textit{score}.}
     \label{fig:sigmoid-alpha}
 \end{figure}
@@ -158,12 +158,13 @@ Subiektywna użyteczność kroku $t$ wynosi $u_t = R(t)$ dla $t = 0$ i $u_t = d(
 
 W tabeli zestawiono trzy profile klienta i wynikającą decyzję.
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.95\textwidth]{/run/media/mwrona/Nowy/Engineering-Thesis/docs/plots/qhexp2.png}
-    \caption{Wizualizacja procesu decyzyjnego.}
-    \label{fig:qhexp2-shop}
-\end{figure}
+% Missing file: qhexp2.png - figure commented out
+% \begin{figure}[htbp]
+%     \centering
+%     \includegraphics[width=0.95\textwidth]{../plots/qhexp2.png}
+%     \caption{Wizualizacja procesu decyzyjnego.}
+%     \label{fig:qhexp2-shop}
+% \end{figure}
 \begin{table}[ht]
   \centering
   \begin{tabular}{l|ccc|cc}
