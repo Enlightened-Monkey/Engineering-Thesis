@@ -68,6 +68,21 @@ latexmk -pdf presentation.tex
 
 ## Uwagi
 
-- Prezentacja wykorzystuje wykresy i diagramy z folderu `../thesis/fig/`
+- **WAŻNE:** Prezentacja wykorzystuje wykresy i diagramy z folderu `../thesis/fig/`
+  - Wymagany plik: `../thesis/fig/example1.png` 
+  - Upewnij się, że ten plik istnieje przed kompilacją
 - Bibliografia jest zawarta bezpośrednio w pliku `summary.tex` (środowisko `thebibliography`)
 - Wszystkie wzory matematyczne są w notacji LaTeX zgodnej z pracą dyplomową
+
+## Zależności struktury folderów
+
+Prezentacja zakłada następującą strukturę katalogów:
+```
+docs/
+├── defense_presentation/  (ten folder)
+│   ├── presentation.tex
+│   └── chapters/
+└── thesis/
+    └── fig/
+        └── example1.png   (wymagany!)
+```

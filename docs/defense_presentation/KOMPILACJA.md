@@ -72,7 +72,24 @@ Upewnij się, że:
 3. W preambule jest `\usepackage[polish]{babel}`
 
 ### Problem: Brak obrazków
-Upewnij się, że folder `../thesis/fig/` zawiera plik `example1.png`. Ścieżka jest relatywna do lokalizacji pliku `presentation.tex`.
+**Symptom:** Błąd kompilacji "File `../thesis/fig/example1.png' not found"
+
+**Rozwiązanie:**
+Upewnij się, że:
+1. Folder `../thesis/fig/` istnieje (ścieżka relatywna do `presentation.tex`)
+2. Plik `example1.png` znajduje się w tym folderze
+3. Struktura katalogów jest zgodna z oczekiwaną:
+   ```
+   docs/
+   ├── defense_presentation/  (lokalizacja presentation.tex)
+   └── thesis/
+       └── fig/
+           └── example1.png
+   ```
+
+Jeśli plik nie istnieje, możesz:
+- Skopiować diagram z oryginalnej pracy
+- Zakomentować linię z `\includegraphics` w `chapters/results.tex`
 
 ## Struktura plików wyjściowych
 
