@@ -2,9 +2,25 @@ import numpy as np
 import os
 try:
     import matplotlib.pyplot as plt
+    import seaborn as sns
     PLOTTING_AVAILABLE = True
+    # Konfiguracja stylu wykresów
+    plt.style.use("seaborn-v0_8")
+    sns.set_palette("deep")
+    plt.rcParams.update({
+        'font.size': 11,
+        'axes.labelsize': 12,
+        'axes.titlesize': 13,
+        'xtick.labelsize': 10,
+        'ytick.labelsize': 10,
+        'legend.fontsize': 10,
+        'figure.titlesize': 14,
+        'lines.linewidth': 2.0,
+        'grid.alpha': 0.25,
+    })
 except Exception:
     plt = None
+    sns = None
     PLOTTING_AVAILABLE = False
 
 # --- UPROSZCZONY MODEL KATEGORII (1..5) ---
@@ -138,27 +154,30 @@ def plot_and_save(result):
     safe_name = result['name'].replace(" ", "_").replace("(", "").replace(")", "").replace("/", "_")
     filename = f"Decyzja_{safe_name}_Pierwiastek.png"
 
-    plt.figure(figsize=(10, 6))
+    colors = sns.color_palette("deep")
+    fig, ax = plt.subplots(figsize=(10, 6.2))
 
     # Linia nagrody obiektywnej
-    plt.plot(result['steps'], result['rewards'], color='gray', linestyle='--', alpha=0.6, label='Obiektywna Wartość R(t) - Funkcja pierwiastkowa')
+    ax.plot(result['steps'], result['rewards'], color='gray', linestyle='--', alpha=0.7, 
+            linewidth=2.0, label='Obiektywna Wartość R(t) - Funkcja pierwiastkowa')
 
     # Linia użyteczności subiektywnej
-    plt.plot(result['steps'], result['utilities'], 'o-', linewidth=2.5, color='#1f77b4', label='Postrzegana Użyteczność (z QH)')
+    ax.plot(result['steps'], result['utilities'], 'o-', linewidth=2.5, color=colors[0], 
+            alpha=0.9, markersize=6, label='Postrzegana Użyteczność (z QH)')
 
     # Punkt decyzji
     best_t = result['best_step']
     best_u = result['utilities'][best_t]
-    dot_color = 'red' if best_t == 0 else 'green'
+    dot_color = colors[3] if best_t == 0 else colors[2]  # czerwony lub zielony z palety
 
-    plt.scatter([best_t], [best_u], s=200, c=dot_color, zorder=10, edgecolors='black')
+    ax.scatter([best_t], [best_u], s=220, c=[dot_color], zorder=10, edgecolors='black', linewidths=2)
 
     # Etykieta decyzji
-    plt.annotate(f"{result['decision']}\n(U={best_u:.2f})",
-                 (best_t, best_u),
-                 xytext=(best_t + 0.5, best_u + (0.1 if best_t < 5 else -0.2)),
-                 fontsize=11, fontweight='bold',
-                 arrowprops=dict(facecolor='black', shrink=0.05))
+    ax.annotate(f"{result['decision']}\n(U={best_u:.2f})",
+                (best_t, best_u),
+                xytext=(best_t + 0.5, best_u + (0.1 if best_t < 5 else -0.2)),
+                fontsize=11, fontweight='bold',
+                arrowprops=dict(facecolor='black', shrink=0.05, width=1.5, headwidth=8))
 
     # Tytuł i opis
     title_text = (
@@ -166,14 +185,16 @@ def plot_and_save(result):
         f"Cena: {result['price_label']} | Majątek: {result['wealth_label']} | Wiek: {result['age_label']}\n"
         f"Alpha: {result['alpha']:.3f} (Present Bias) | Max Nagroda: {max(result['rewards']):.2f}"
     )
-    plt.title(title_text, fontsize=12, fontweight='bold', loc='left')
+    ax.set_title(title_text, fontsize=13, fontweight='bold', loc='left', pad=15)
 
-    plt.grid(True, alpha=0.3)
-    plt.ylabel('Użyteczność')
-    plt.xlabel('Czas (kroki researchu)')
-    plt.legend(loc='lower right')
+    ax.set_facecolor('#ffffff')
+    ax.grid(True, alpha=0.3, linestyle='-', linewidth=0.8, color='#cccccc')
+    ax.set_ylabel('Użyteczność', fontweight='semibold')
+    ax.set_xlabel('Czas (kroki researchu)', fontweight='semibold')
+    ax.legend(loc='lower right', framealpha=0.95, edgecolor='gray')
 
-    plt.savefig(filename)
+    fig.tight_layout()
+    fig.savefig(filename, dpi=200)
     plt.close()
     print(f"Zapisano wykres do pliku: {filename}")
 
@@ -211,19 +232,23 @@ def plot_sigmoid_alpha_curve(k=7, x0=0.5):
     scores = np.linspace(0, 1, 200)
     alphas = sigmoid(scores, k=k, x0=x0)
 
-    plt.figure(figsize=(8, 5))
-    plt.plot(scores, alphas, color='#1f77b4', linewidth=2.5, label=r"$\sigma(\text{score}; k, x_0)=\alpha$")
-    plt.axhline(0.5, color='gray', linestyle='--', linewidth=1, alpha=0.6)
-    plt.axvline(x0, color='gray', linestyle='--', linewidth=1, alpha=0.6)
-    plt.text(x0 + 0.02, 0.52, f"x0={x0}", fontsize=10, color='gray')
-    plt.title("Funkcja sigmoidalna dla parametru $\\alpha$", fontsize=12, fontweight='bold')
-    plt.xlabel("score")
-    plt.ylabel(r"$\alpha$")
-    plt.ylim(0, 1)
-    plt.grid(True, alpha=0.3)
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig("Sigmoid_alpha.png", dpi=150)
+    colors = sns.color_palette("deep")
+    fig, ax = plt.subplots(figsize=(9, 5.5))
+    ax.plot(scores, alphas, color=colors[0], linewidth=2.8, alpha=0.9, label=r"$\sigma(\text{score}; k, x_0)=\alpha$")
+    ax.axhline(0.5, color='gray', linestyle='--', linewidth=1.2, alpha=0.6)
+    ax.axvline(x0, color='gray', linestyle='--', linewidth=1.2, alpha=0.6)
+    ax.text(x0 + 0.02, 0.52, f"x0={x0}", fontsize=11, color='gray', fontweight='semibold')
+    ax.set_title("Funkcja sigmoidalna dla parametru $\\alpha$", fontsize=14, fontweight='bold', pad=15)
+    ax.set_xlabel("score", fontweight='semibold')
+    ax.set_ylabel(r"$\alpha$", fontweight='semibold')
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0.5, 1)
+    ax.set_aspect('equal', adjustable='box')
+    ax.set_facecolor('#ffffff')
+    ax.grid(True, alpha=0.3, linestyle='-', linewidth=0.8, color='#cccccc')
+    ax.legend(framealpha=0.95, edgecolor='gray')
+    fig.tight_layout()
+    fig.savefig("Sigmoid_alpha.png", dpi=200)
     plt.close()
     print("Zapisano wykres: Sigmoid_alpha.png")
 
@@ -246,23 +271,29 @@ def plot_reward_discount_combo(price_level=2, wealth_level=3, age_level=3, beta=
 
     perceived = discount * rewards
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(steps, rewards, 'o--', label='R(t) (nagroda obiektywna)', color='gray')
-    plt.plot(steps, discount, 's-', label=r"$d(t)=\alpha\,\beta^t$ z $d(0)=1$", color='#2ca02c')
-    plt.plot(steps, perceived, 'd-', label=r"$d(t) \cdot R(t)$", color='#d62728')
+    colors = sns.color_palette("deep")
+    fig, ax = plt.subplots(figsize=(10, 6.2))
+    ax.plot(steps, rewards, 'o--', label='R(t) (nagroda obiektywna)', color='gray', 
+            linewidth=2.2, markersize=6, alpha=0.8)
+    ax.plot(steps, discount, 's-', label=r"$d(t)=\alpha\,\beta^t$ z $d(0)=1$", color=colors[2], 
+            linewidth=2.2, markersize=6, alpha=0.85)
+    ax.plot(steps, perceived, 'd-', label=r"$d(t) \cdot R(t)$", color=colors[3], 
+            linewidth=2.2, markersize=6, alpha=0.85)
 
-    plt.title(
+    ax.set_title(
         f"Nagroda i dyskontowanie (price_level={price_level}, wealth={wealth_level}, age={age_level})\n"
         f"alpha={alpha:.3f}, beta={beta}",
-        fontsize=12,
+        fontsize=13,
         fontweight='bold',
+        pad=15,
     )
-    plt.xlabel('Czas (kroki)')
-    plt.ylabel('Wartość')
-    plt.grid(True, alpha=0.3)
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig("Reward_Discount_combo.png", dpi=150)
+    ax.set_xlabel('Czas (kroki)', fontweight='semibold')
+    ax.set_ylabel('Wartość', fontweight='semibold')
+    ax.set_facecolor('#ffffff')
+    ax.grid(True, alpha=0.3, linestyle='-', linewidth=0.8, color='#cccccc')
+    ax.legend(framealpha=0.95, edgecolor='gray')
+    fig.tight_layout()
+    fig.savefig("Reward_Discount_combo.png", dpi=200)
     plt.close()
     print("Zapisano wykres: Reward_Discount_combo.png")
 
@@ -273,7 +304,8 @@ def plot_three_profiles_together(profiles_list, beta=0.99, max_steps=15):
         print("[INFO] Pomijam rysowanie wspólnego wykresu: matplotlib niedostępny.")
         return
 
-    fig, axes = plt.subplots(1, 3, figsize=(16, 5), sharex=True, sharey=True)
+    colors = sns.color_palette("husl", 4)
+    fig, axes = plt.subplots(1, 3, figsize=(17, 5.5), sharex=True, sharey=True)
     for idx_ax, (ax, profile) in enumerate(zip(axes, profiles_list)):
         res = simulate_decision(**profile, beta=beta, max_steps=max_steps)
         steps = res["steps"]
@@ -293,29 +325,34 @@ def plot_three_profiles_together(profiles_list, beta=0.99, max_steps=15):
         purchase_label = "Moment zakupu" if idx_ax == 0 else None
         # --- koniec nowego fragmentu ---
 
-        ax.plot(steps, rewards, 'o--', color='gray', label='R(t)')
-        ax.plot(steps, discount, 's-', color='#2ca02c', label=r"$d(t)=\alpha\beta^t$")
-        ax.plot(steps, perceived, 'd-', color='#d62728', label=r"$d(t)\cdot R(t)$")
+        ax.plot(steps, rewards, 'o--', color=colors[0], label='R(t)', linewidth=2.0, markersize=5, alpha=0.85)
+        ax.plot(steps, discount, 's-', color=colors[1], label=r"$d(t)$", linewidth=2.0, markersize=5, alpha=0.85)
+        ax.plot(steps, perceived, 'd-', color=colors[2], label=r"$d(t)\cdot R(t)$", linewidth=2.0, markersize=5, alpha=0.85)
 
         if decision_step is not None:
             # znajdź indeks kroku w tablicy steps, by pobrać wartość d(t)*R(t)
             try:
                 j = int(np.where(steps == decision_step)[0][0])
-                ax.axvline(decision_step, color="#1f77b4", linestyle="--", alpha=0.5, label=purchase_label)
-                ax.scatter(decision_step, perceived[j], color="#1f77b4", marker="x", zorder=6)
+                ax.axvline(decision_step, color=colors[3], linestyle="--", alpha=0.6, linewidth=1.5, label=purchase_label)
+                ax.scatter(decision_step, perceived[j], color=colors[3], marker="x", s=100, linewidths=2.5, zorder=6)
             except Exception:
                 pass
 
-        ax.set_title(f"{profile['name']}\nα={alpha:.3f}, β={beta}", fontsize=10, fontweight='bold')
-        ax.grid(True, alpha=0.3)
-        ax.set_xlabel("Czas (kroki)")
+        ax.set_title(f"{profile['name']}\nα={alpha:.3f}, β={beta}", fontsize=11, fontweight='bold', pad=10)
+        ax.set_facecolor('#ffffff')
+        ax.grid(True, alpha=0.3, linestyle='-', linewidth=0.8, color='#cccccc')
+        ax.set_xlabel("Czas (kroki)", fontweight='semibold')
         ax.set_xlim(0, max_steps-1)
 
-    axes[0].set_ylabel("Wartość")
-    axes[0].legend(loc="lower right")
-    fig.suptitle("Nagroda, dyskontowanie i użyteczność — trzy profile", fontsize=12, fontweight='bold')
-    fig.tight_layout(rect=[0, 0.02, 1, 0.95])
-    plt.savefig("Three_profiles_combo.png", dpi=150)
+    axes[0].set_ylabel("Wartość", fontweight='semibold')
+    
+    # Legenda na dole pod trzema wykresami
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="lower center", ncol=3, frameon=True, framealpha=0.95, 
+               edgecolor='gray', fontsize=10, bbox_to_anchor=(0.5, -0.02))
+    
+    fig.tight_layout(rect=[0, 0.08, 1, 1])
+    fig.savefig("Three_profiles_combo.png", dpi=200)
     plt.close()
     print("Zapisano wykres: Three_profiles_combo.png")
 

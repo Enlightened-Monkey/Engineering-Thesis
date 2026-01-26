@@ -17,10 +17,9 @@ Model markowskiego procesu decyzyjnego (MDP) z dyskontowaniem quasi-hiperboliczn
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.8\textwidth]{fig/schematRL.png}
-    \caption{Struktura interakcji agent--środowisko w markowskim procesie decyzyjnym.}
+    \caption{Struktura interakcji decydent--środowisko w markowskim procesie decyzyjnym.}
     \label{fig:mdp-structure}
 \end{figure}
-s
 \subsection{Przestrzenie pomocnicze}
 
 Oznaczmy przez:
@@ -29,9 +28,10 @@ Oznaczmy przez:
 \item $\mathcal{H}_n$ -- historie długości $n$: $h_n = (s_0, a_0, s_1, a_1, \ldots, s_n)$, przy czym $h_0 = s_0$.
 \end{enumerate}
 
-Historia gromadzi pełen kontekst interakcji agent--środowisko do czasu $n$.
+Historia gromadzi pełen kontekst interakcji decydent--środowisko do czasu $n$.
 
 \subsection{Polityki decydenta}
+Niech $\phi = (\phi_0, \phi_1, \ldots)$.\\ 
 Wyróżniamy trzy klasy polityk:
 \begin{enumerate}
 \item Polityki zależne od historii; gdzie $\phi_n : \mathcal{H}_n \rightarrow \Pr(A)$ określa rozkład akcji dla każdej historii $h_n \in \mathcal{H}_n$, $n \in \mathbb{N} \cup \{0\} = \mathbb{N}_0$.
@@ -155,16 +155,13 @@ Nagrodą jest funkcja rosnąca, ale o malejących przyrostach:
   R(t) = 1 + \Bigl(0.10 + 0.60\, p_{\text{norm}} \Bigr) \bigl(1 - e^{-0.5 t}\bigr), \quad t \in \{0,1,\ldots\}.
 \end{equation*}
 Subiektywna użyteczność kroku $t$ wynosi $u_t = R(t)$ dla $t = 0$ i $u_t = d(t)R(t) = \alpha\, \beta^t R(t)$ dla $t \ge 1$, z $\beta = 0.99$. Decyzja to $t^\star = \arg\max_t u_t$: $t^\star = 0$ oznacza impulsowy zakup, $t^\star > 0$ oznacza zakup po dodatkowym przeszukaniu. \\
-
-W tabeli zestawiono trzy profile klienta i wynikającą decyzję.
-
-% Missing file: qhexp2.png - figure commented out
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=0.95\textwidth]{../plots/qhexp2.png}
-%     \caption{Wizualizacja procesu decyzyjnego.}
-%     \label{fig:qhexp2-shop}
-% \end{figure}
+Poniższe wykresy i tabela ilustrują, jak trzy przykładowe profile klientów wpływają na ostateczną decyzję zakupową. 
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\textwidth]{../plots/qhExp2.png}
+    \caption{Wizualizacja procesu decyzyjnego.}
+    \label{fig:qhexp2-shop}
+\end{figure}
 \begin{table}[ht]
   \centering
   \begin{tabular}{l|ccc|cc}
@@ -177,4 +174,3 @@ W tabeli zestawiono trzy profile klienta i wynikającą decyzję.
   \caption{Symulacja decyzji zakupowych z quasi-hiperbolicznym dyskontowaniem.}
   \label{tab:decision-shop}
 \end{table}
-

@@ -189,7 +189,7 @@ class QHQLearningTorch:
             # Convert mask once and cache it
             if not hasattr(self, '_cached_mask') or self._cached_mask is None:
                 self._cached_mask = torch.as_tensor(available_actions_mask, device=self.device, dtype=torch.bool)
-            if not hasattr(self, '_cached_neg_inf'):
+            if not hasattr(self, '_cached_neg_inf') or self._cached_neg_inf is None:
                 self._cached_neg_inf = torch.tensor(-1.0e30, device=self.device, dtype=self.dtype)
             
             mask_next = self._cached_mask[next_states]  # [B, A]
