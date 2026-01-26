@@ -95,3 +95,6 @@ docs/thesis/main.toc
 docs/thesis/main.lof
 docs/thesis/main.lot
 
+# Defense presentation compiled output
+docs/defense_presentation/*.pdf
+
