@@ -7,6 +7,7 @@
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{amsthm}
 \usepackage{algorithm}
 \usepackage{algorithmic}
 \usepackage{booktabs}
@@ -21,18 +22,43 @@
 \institute{Politechnika Wrocławska\\Wydział Matematyki\\[0.5em]Promotor: prof. dr hab. inż. Anna Jaśkiewicz}
 \date{\today}
 
+% Polish labels for algorithms
+\floatname{algorithm}{Algorytm}
+\renewcommand{\listalgorithmname}{Spis algorytmów}
+\renewcommand{\algorithmicrequire}{\textbf{Wymagania:}}
+\renewcommand{\algorithmicensure}{\textbf{Wynik:}}
+
+\AtBeginSection[]{
+	\begin{frame}
+	\frametitle{Plan prezentacji}
+	\tableofcontents[currentsection]
+	\end{frame}
+}
+
 \begin{document}
 
 % Strona tytułowa
 \input{chapters/title.tex}
 
+\begin{frame}{Plan prezentacji}
+\tableofcontents
+\end{frame}
+
 % Wstęp
 \input{chapters/introduction.tex}
+
+% Teoria i algorytmy
+\input{chapters/theory.tex}
 
 % Wyniki własne
 \input{chapters/results.tex}
 
 % Podsumowanie
 \input{chapters/summary.tex}
+
+\begin{frame}[allowframebreaks]{Bibliografia}
+\bibliographystyle{plain}
+\bibliography{bibliography/references}
+\end{frame}
 
 \end{document}

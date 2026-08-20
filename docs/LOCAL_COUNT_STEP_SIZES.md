@@ -1,6 +1,58 @@
-# Local Count-Based Step Sizes for QH Q-Learning
+# Visit Counters and Step-Size Schedules in QH Q-Learning
 
-## Problem Statement
+## Current Status
+
+This document clarifies the current implementation in src/algorithms/qh_qlearning.py.
+
+The code currently uses:
+
+1. Local visit counters per (state, action) for diagnostics and persistence.
+2. Global Robbins-Monro schedules for eta_n and theta_n, driven by a global
+     iteration counter.
+
+In other words, visit counts are recorded, but do not directly drive the
+learning-rate denominator.
+
+## Historical Context
+
+Earlier notes around this repository described a local-count step-size variant
+for rarely visited state-action pairs. Those notes are kept for context, but
+the active implementation and tests now align with a global schedule design.
+
+## Why this matters
+
+Documentation and code must be interpreted together:
+
+- src/algorithms/qh_qlearning.py states that _next_step_sizes uses a global
+    iteration index.
+- src/tests/test_local_counters.py verifies the same behavior.
+
+If you are analyzing convergence behavior, treat "local counters" as coverage
+statistics, not as the source of step-size decay in the active code.
+
+## Reference Behavior (current)
+
+Conceptually, the implementation behaves like:
+
+```python
+self._visit_counts[state, action] += 1
+self._iteration += 1
+t = self._iteration
+eta_n = eta_step / (offset + t) ** eta_power
+theta_n = theta_step / (offset + t) ** theta_power
+```
+
+## Notes on experiments
+
+Historical experiment summaries may still use wording such as
+"local count-based step sizes". In the current codebase, interpret this label
+as historical naming, unless explicitly stated otherwise in the script.
+
+## Legacy Results (archival)
+
+The remainder of this file preserves earlier benchmark notes for reference.
+
+---
 
 The original QH Q-Learning implementation suffered from convergence issues in rarely-visited state-action pairs. Specifically, in the Inventory Control experiment:
 

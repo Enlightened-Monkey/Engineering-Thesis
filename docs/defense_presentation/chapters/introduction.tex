@@ -1,40 +1,48 @@
-\section{Wstęp}
+\section{Wprowadzenie}
 
-\begin{frame}{Plan prezentacji}
-\tableofcontents
-\end{frame}
-
-\begin{frame}{Motywacja wyboru tematu}
+\begin{frame}{Motywacja i cel pracy}
+\textbf{Motywacja:}   
 \begin{itemize}
-    \item Uczenie maszynowe poprzez wzmocnienie (Reinforcement Learning, RL) -- dziedzina AI zajmująca się projektowaniem decydentów uczących się przez interakcję z otoczeniem
-    \vspace{0.5em}
-    \item Tradycyjne podejście: wykładnicze dyskontowanie
+    \item \textbf{Uczenie maszynowe poprzez wzmocnienie (RL)}
+    \vspace{0.3em}
+    \item \textbf{Połączenie psychologii z matematyką}
     \begin{itemize}
-        \item Spójne czasowo
-        \item Nie oddaje wielu rzeczywistych zachowań ludzkich
+        \item Ekonomia behawioralna
+        \item Zjawisko prokrastynacji
     \end{itemize}
-    \vspace{0.5em}
-    \item \textbf{Dyskontowanie quasi-hiperboliczne (QH)}
+    \vspace{0.3em}
+    \item \textbf{Dyskontowanie quasi-hiperboliczne (QH):} $d(0) = 1$, $d(t) = \alpha\beta^t$ dla $t \geq 1$
     \begin{itemize}
-        \item Bardziej realistyczne modelowanie ludzkich preferencji czasowych
-        \item Pozwala na modelowanie niespójności czasowej
-        \item Zastosowania: ekonomia behawioralna, psychologia uzależnień, teoria gier
+        \item Modeluje uprzedzenie teraźniejszości (present bias)
+        \item Umożliwia analizę niespójności czasowej
+        \item Zastosowania: ekonomia behawioralna, psychologia, zarządzanie zasobami
     \end{itemize}
+    \vspace{0.3em}
+    \item \textbf{Cel pracy:} Analiza i implementacja algorytmów RL dla MDP z dyskontowaniem QH
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Wprowadzenie oznaczeń matematycznych}
-\textbf{Markowski Proces Decyzyjny (MDP):} $M = (S, A, q, r, \alpha, \beta)$
+\begin{frame}{Markowski proces decyzyjny (MDP)}
+\textbf{Model:} $M = (S, A, q, r, \alpha, \beta)$
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
 \begin{itemize}
-    \item $S$ -- zbiór stanów
-    \item $A$ -- zbiór akcji
-    \item $q(s' \mid s, a)$ -- prawdopodobieństwo przejścia do stanu $s'$ przy akcji $a$ w stanie $s$
+    \item $S$ -- skończony zbiór stanów
+    \item $A$ -- skończony zbiór akcji
+    \item $q(s' \mid s, a)$ -- prawdopodobieństwo przejścia
     \item $r(s, a)$ -- funkcja nagrody
-    \item $\alpha$ -- parametr uprzedzenia teraźniejszości
-    \item $\beta$ -- współczynnik dyskontowania wykładniczego
+    \item $\alpha > 0$ -- parametr uprzedzenia teraźniejszości
+    \item $\beta \in [0,1)$ -- współczynnik dyskontowania
 \end{itemize}
+\end{column}
+\begin{column}{0.48\textwidth}
+\centering
+\includegraphics[width=0.95\textwidth]{../thesis/fig/schematRL.png}
+\small Schemat interakcji agent--środowisko
+\end{column}
+\end{columns}
 
-\vspace{1em}
+\vspace{0.5em}
 \textbf{Funkcja dyskontująca:}
 \[
 d(t) = 
@@ -43,105 +51,82 @@ d(t) =
     \alpha\,\beta^{t}, & \text{jeśli } t \ge 1.
 \end{cases}
 \]
-
-\textbf{Skumulowana nagroda:} $R = \sum_{t=0}^{n} d(t)\, r_t$
 \end{frame}
 
-\begin{frame}{Wprowadzenie oznaczeń (cd.)}
-\textbf{Typy decydentów w zależności od $\alpha$:}
+\begin{frame}{Polityki i funkcje wartości}
+\textbf{Typy polityk:}
 \begin{itemize}
-    \item $\alpha = 1$ -- standardowy decydent (czasowo spójny)
-    \item $0 < \alpha < 1$ -- decydent quasi-hiperboliczny (czasowo niespójny)
+    \item $\Phi$ -- polityki zależne od historii: $\phi_n : \mathcal{H}_n \rightarrow \Pr(A)$
+    \item $\Phi_m$ -- polityki markowskie: $\phi_n : S \rightarrow \Pr(A)$
+    \item $\Phi_s$ -- polityki stacjonarne: $\phi_s : S \rightarrow \Pr(A)$, $\phi_n = \phi_s$ dla każdego $n$
+\end{itemize}
+
+\vspace{0.5em}
+\textbf{Funkcja wartości z dyskontowaniem QH:}
+\begin{align*}
+    J_{\phi}^{\alpha,\beta}(s_0)
+    &= \mathbb{E}\!\left[ r(s_0,a_0) + \alpha\,\beta\, J_{\overrightarrow{\phi}}^{\beta}(s_1) \right] \\
+    &= \sum_a \phi_0(a \mid s_0) \left[ r(s_0,a) + \alpha\,\beta\, \sum_{s'} q(s' \mid s_0,a) J_{\overrightarrow{\phi}}^{\beta}(s') \right]
+\end{align*}
+gdzie $\overrightarrow{\phi} = (\phi_1, \phi_2, \ldots)$, a $J_{\overrightarrow{\phi}}^{\beta}$ to wartość z dyskontowaniem wykładniczym.
+\end{frame}
+
+\begin{frame}{Przykład: Decyzja zakupowa}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\textbf{Scenariusze:}
+\begin{itemize}
+    \item \textbf{Blisko:} Tanią rzecz teraz vs. lepszy produkt jutro
+    \item \textbf{Daleko:} Tanią rzecz za 50 dni vs. lepszy produkt za 51 dni
+\end{itemize}
+
+\vspace{0.5em}
+\textbf{Parametry:}
+\begin{itemize}
+    \item QH: $\alpha = 0.5$, $\beta = 0.99$
+    \item EXP: $\alpha = 1.0$, $\beta = 0.99$
+\end{itemize}
+
+\vspace{0.5em}
+\textbf{Wyniki:}
+\begin{itemize}
+    \item QH (blisko): kupuje tanią rzecz teraz
+    \item QH (daleko): czeka na lepszy produkt
+    \item EXP: zawsze czeka na lepszy produkt
+\end{itemize}
+\end{column}
+\begin{column}{0.48\textwidth}
+\centering
+\includegraphics[width=0.95\textwidth]{../plots/choice_apple.png}
+\end{column}
+\end{columns}
+
+\vspace{0.3em}
+\textbf{Wniosek:} Dyskontowanie QH wykazuje niespójność czasową -- preferencje zmieniają się w zależności od horyzontu czasowego.
+\end{frame}
+
+\begin{frame}{Typy decydentów w zależności od $\alpha$}
+\begin{columns}[T]
+\begin{column}{0.55\textwidth}
+\begin{itemize}
+    \item $\alpha = 1$ -- \textbf{decydent standardowy} (czasowo spójny)
+    \item $0 < \alpha < 1$ -- \textbf{decydent quasi-hiperboliczny} (czasowo niespójny)
+    \begin{itemize}
+        \item \textit{Naiwny} -- nie przewiduje własnych przyszłych preferencji
+        \item \textit{Zobowiązany} (precommitted) -- trzyma się wcześniej ustalonego planu
+        \item \textit{Wyrafinowany} (sophisticated) -- przewiduje i bierze pod uwagę przyszłe zmiany preferencji
+    \end{itemize}
     \item $\alpha = 0$ -- decydent krótkowzroczny
     \item $\alpha > 1$ -- decydent długowzroczny
 \end{itemize}
-
-\vspace{1em}
-\textbf{Polityka:}
-\begin{itemize}
-    \item $\phi$ -- polityka (strategia wyboru akcji)
-    \item $\mu$ -- reguła pierwszego kroku
-    \item $\phi_s$ -- polityka stacjonarna (niezależna od czasu)
-    \item $J_{\phi}^{\alpha,\beta}(s)$ -- funkcja wartości dla polityki $\phi$ przy dyskontowaniu QH
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Kluczowe wyniki -- Twierdzenie o redukcji polityk}
-\begin{block}{Twierdzenie 1 \cite{eshwar2025}}
-Dla MDP o skończonych zbiorach stanów i akcji, dla dowolnej polityki $\phi = (\phi_0, \phi_1, \ldots)$ istnieje reguła pierwszego kroku $\mu$ oraz stacjonarna polityka $\phi_s$ takie, że:
-\[
-J_{\phi}^{\alpha,\beta}(s) = J_{(\mu,\phi_s)}^{\alpha,\beta}(s), \qquad \forall s \in S.
-\]
-\end{block}
+\end{column}
+\begin{column}{0.42\textwidth}
+\centering
+\includegraphics[width=0.95\textwidth]{../plots/qh_discounting_comparison.png}
+\small Porównanie funkcji dyskontowania dla różnych wartości $\alpha$ przy $\beta = 0.95$
+\end{column}
+\end{columns}
 
 \vspace{0.5em}
-\textbf{Wniosek:} Wystarczy szukać optymalnej polityki w postaci pary $(\mu^\star, \phi_s^\star)$.
-
-\vspace{0.5em}
-\small{Dowód: Jaśkiewicz \& Nowak (2021), Eshwar et al. (2025)}
-\end{frame}
-
-\begin{frame}{Kluczowe wyniki -- Operator Bellmana}
-\begin{block}{Lemat o kontrakcji \cite{puterman2014,Kallenberg2022}}
-Operator Bellmana $T^{\phi_s}$ dla polityki stacjonarnej $\phi_s$ jest kontrakcją z faktorem $\beta$:
-\[
-\|T^{\phi_s}(V) - T^{\phi_s}(W)\|_\infty \le \beta \|V - W\|_\infty
-\]
-\end{block}
-
-\vspace{0.5em}
-\textbf{Implikacje:}
-\begin{itemize}
-    \item Gwarancja zbieżności iteracji wartości
-    \item Wykładnicza szybkość zbieżności
-    \item Możliwość efektywnego obliczania wartości optymalnej polityki
-\end{itemize}
-
-\vspace{0.5em}
-\small{Odniesienie do dowodu: Puterman (2014), Kallenberg (2022)}
-\end{frame}
-
-\begin{frame}{Kluczowe wyniki -- Istnienie optymalnej polityki}
-\begin{block}{Twierdzenie 2 \cite{eshwar2025}}
-Dla MDP o skończonych zbiorach stanów i akcji istnieje deterministyczna optymalna para $(\mu^\star, \phi_s^\star)$, która składa się z reguły decyzyjnej dla pierwszego kroku i polityki stacjonarnej.
-\end{block}
-
-\vspace{0.5em}
-\textbf{Znaczenie:}
-\begin{itemize}
-    \item Redukcja przestrzeni poszukiwań
-    \item Możliwość zastosowania algorytmów dyskretnych
-    \item Gwarancja znalezienia optymalnego rozwiązania
-\end{itemize}
-
-\vspace{0.5em}
-\small{Dowód: Eshwar et al. (2025)}
-\end{frame}
-
-\begin{frame}{Kluczowe wyniki -- Algorytmy uczenia ze wzmocnieniem}
-\textbf{Przedstawione algorytmy:}
-
-\begin{enumerate}
-    \item \textbf{QH Policy Evaluation} -- ocena wartości danej polityki
-    \begin{itemize}
-        \item Aproksymacja stochastyczna o dwóch skalach czasowych
-        \item Wykorzystuje warunki Robbinsa-Monro
-    \end{itemize}
-    
-    \vspace{0.5em}
-    \item \textbf{QH Q-Learning} -- uczenie optymalnej polityki
-    \begin{itemize}
-        \item Algorytm bezmodelowy (model-free)
-        \item Nie wymaga znajomości dynamiki środowiska
-        \item Zbieżność prawie na pewno do optymalnej polityki
-    \end{itemize}
-\end{enumerate}
-
-\vspace{0.5em}
-\begin{block}{Twierdzenie o zbieżności \cite{eshwar2025,borkar2008}}
-Algorytm QH Q-Learning zbiega prawie na pewno do optymalnych polityk przy odpowiednich warunkach na kroki uczenia $\eta_n$ i $\theta_n$.
-\end{block}
-
-\vspace{0.5em}
-\small{Dowód: Eshwar et al. (2025), Borkar (2008)}
+\textbf{W pracy:} Koncentrujemy się na decydentach zobowiązanych (precommitted agents).
 \end{frame}

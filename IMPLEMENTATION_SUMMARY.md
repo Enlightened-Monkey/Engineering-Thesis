@@ -1,23 +1,38 @@
 # Implementation Summary: Local Count-Based Step Sizes for QH Q-Learning
 
+## Important Status Update (Current Code)
+
+This summary is kept for historical context.
+
+In the current implementation (src/algorithms/qh_qlearning.py):
+
+- Visit counters per (s,a) are maintained.
+- Step sizes are generated from a global iteration counter.
+- Unit tests in src/tests/test_local_counters.py validate this global-schedule behavior.
+
+Therefore, statements below about local counters directly driving the learning
+rate should be treated as archival notes, not as the active implementation
+contract.
+
 ## Overview
-This implementation addresses the convergence issue in QH Q-Learning for rarely-visited state-action pairs by replacing global iteration counting with local per-(s,a) visit counting.
+Current implementation keeps global iteration-based step-size schedules and
+adds per-(s,a) visit counters for diagnostics, analysis, and persistence.
 
 ## Changes Made
 
 ### Core Algorithm (src/algorithms/qh_qlearning.py)
 
-**1. Added visit counter matrix (line 114-116)**
+**1. Added visit counter matrix**
 ```python
-# LOCAL COUNT-BASED STEP SIZES: Track visits per (s,a) pair
+# Track visits per (s,a) pair for diagnostics and persistence
 self._visit_counts = np.zeros((n_states, n_actions), dtype=np.int64)
 ```
 
-**2. Modified step size calculation (lines 169-198)**
+**2. Step size generation in _next_step_sizes(state, action)**
 - Changed signature: `_next_step_sizes(self, state: int, action: int)`
-- Uses local visit count: `n_visits = self._visit_counts[state, action]`
-- Reduced offset from 100.0 to 10.0 for faster learning
-- Maintains global counter for backward compatibility
+- Increments local visit counter for the accessed pair
+- Uses global iteration index for Robbins-Monro schedules
+- Keeps two-timescale behavior via separate eta/theta schedules
 
 **3. Updated update() method (line 159)**
 ```python
@@ -34,7 +49,7 @@ eta_n, theta_n = self._next_step_sizes(state, action)
 Created comprehensive unit tests:
 - `test_visit_counts_initialization()`: Verifies initialization
 - `test_visit_counts_increment()`: Confirms proper counting
-- `test_local_step_sizes_independence()`: Validates independent step sizes
+- `test_step_sizes_follow_global_iteration()`: Validates global schedule semantics
 - `test_step_size_decay()`: Checks decay behavior
 - `test_state_persistence_with_visit_counts()`: Tests save/load
 - `test_backward_compatibility_load()`: Ensures old checkpoints work

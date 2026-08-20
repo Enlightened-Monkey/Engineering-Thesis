@@ -1,0 +1,246 @@
+\section{Teoria i algorytmy}
+
+\begin{frame}{Twierdzenie o redukcji polityk}
+\begin{block}{Twierdzenie 1 \cite{eshwar2025}}
+Dla MDP o skończonych zbiorach stanów i akcji, dla dowolnej polityki $\phi = (\phi_0, \phi_1, \ldots)$ istnieje reguła pierwszego kroku $\mu$ oraz stacjonarna polityka $\phi_s$ takie, że:
+\[
+J_{\phi}^{\alpha,\beta}(s) = J_{(\mu,\phi_s)}^{\alpha,\beta}(s), \qquad \forall s \in S.
+\]
+\end{block}
+
+\vspace{0.5em}
+\textbf{Interpretacja:}
+\begin{itemize}
+    \item Wystarczy rozważać polityki w prostszej formie: $(\mu, \phi_s)$
+    \item Pierwszy krok może być dowolny ($\mu$), kolejne kroki stacjonarne ($\phi_s$)
+    \item Redukcja przestrzeni poszukiwań optymalnej polityki
+\end{itemize}
+
+\vspace{0.5em}
+{\small Dowód: wykorzystuje równoważność dyskontowania wykładniczego dla $t \geq 1$ oraz twierdzenie o istnieniu optymalnej polityki stacjonarnej dla MDP z dyskontowaniem wykładniczym \cite{puterman2014,Kallenberg2022}.}
+\end{frame}
+
+\begin{frame}{Wyprowadzenie wzoru dla funkcji wartości}
+\textbf{Cel:} Wyrazić $J^{\alpha, \beta}_{\mu, \phi_s}(s)$ przez $J^{\alpha, \beta}_{\phi_s}(s')$.
+
+\vspace{0.3em}
+Z Twierdzenia 1:
+\begin{equation*}
+J^{\alpha, \beta}_{\mu, \phi_s}(s) = \sum_a \mu(a\mid s) \left[ r(s, a) + \alpha\beta \sum_{s'} q(s'|s, a) \, J^{\beta}_{\phi_s}(s') \right]
+\end{equation*}
+
+\vspace{0.3em}
+Dla polityki stacjonarnej $\phi_s$ mamy dwa równania:
+\begin{align*}
+J^{\beta}_{\phi_s}(s') &= \mathbb{E}_{\phi_s} [r(s', \cdot)] + \beta \mathbb{E}_{\phi_s, q} [J^{\beta}_{\phi_s}(s'') \mid s'] \\
+J^{\alpha, \beta}_{\phi_s}(s') &= \mathbb{E}_{\phi_s} [r(s', \cdot)] + \alpha \beta \mathbb{E}_{\phi_s, q} [J^{\beta}_{\phi_s}(s'') \mid s']
+\end{align*}
+
+\vspace{0.3em}
+Po algebraicznych przekształceniach otrzymujemy:
+\begin{equation*}
+\alpha \beta J^{\beta}_{\phi_s}(s') = \beta J^{\alpha, \beta}_{\phi_s}(s') - (1 - \alpha) \beta \mathbb{E}_{\phi_s} [r(s', \cdot)]
+\end{equation*}
+\end{frame}
+
+\begin{frame}{Wzór końcowy dla funkcji wartości}
+Podstawiając do wzoru z Twierdzenia 1, otrzymujemy:
+
+\begin{block}{Równanie funkcji wartości dla QH}
+\begin{align*}
+J^{\alpha, \beta}_{\mu, \phi_s}(s) &= \sum_a \mu(a\mid s) \Bigg[ r(s, a) + \sum_{s'} q(s'|s, a) \\
+&\qquad \left[ -(1 - \alpha)\beta \sum_{a'} \phi_s(a'|s') r(s', a') + \beta J^{\alpha, \beta}_{\phi_s}(s') \right] \Bigg]
+\end{align*}
+\end{block}
+
+\vspace{0.5em}
+\textbf{Kluczowa obserwacja:}
+\begin{itemize}
+    \item Funkcja wartości dla $\mu$ zależy od funkcji wartości dla $\phi_s$
+    \item Człon $(1-\alpha)\beta$ koryguje wpływ przyszłych nagród
+    \item Umożliwia iteracyjne obliczanie wartości bez znajomości $J^{\beta}_{\phi_s}$
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Operator Bellmana i kontrakcja}
+\begin{block}{Lemat o kontrakcji \cite{puterman2014,Kallenberg2022}}
+Operator $T^{\phi_s}: \mathbb{R}^{|S|} \to \mathbb{R}^{|S|}$ zdefiniowany jako:
+\[
+(T^{\phi_s} J)(s) = \sum_a \phi_s(a\mid s) \left[ r(s, a) + \sum_{s'} q(s'|s, a) \left[ -(1 - \alpha)\beta \mathbb{E}_{\phi_s}[r(s', \cdot)] + \beta J(s') \right] \right]
+\]
+jest kontrakcją w normie $\|\cdot\|_\infty$ ze współczynnikiem $\beta < 1$.
+\end{block}
+
+\vspace{0.5em}
+\textbf{Konsekwencje:}
+\begin{itemize}
+    \item Istnieje jedyny punkt stały $J^{\alpha, \beta}_{\phi_s}$
+    \item Iteracja $J_{n+1} = T^{\phi_s}(J_n)$ zbiega wykładniczo: $\|J_n - J^{\alpha, \beta}_{\phi_s}\| \leq \beta^n \|J_0 - J^{\alpha, \beta}_{\phi_s}\|$
+    \item Gwarantuje zbieżność algorytmów aproksymacji stochastycznej
+\end{itemize}
+
+{\small Dowód: standardowa analiza operatorów kontrakcji, twierdzenie Banacha o punkcie stałym.}
+\end{frame}
+
+\begin{frame}{Algorytm 1: QH Policy Evaluation}
+\begin{algorithm}[H]
+\caption{Ocena polityki dla dyskontowania QH \cite{eshwar2025}}
+\label{alg:policy-eval-defense}
+\begin{algorithmic}[1]
+\small
+\STATE \textbf{Wymagania:} Kroki uczenia $(\eta_n)$, $(\theta_n)$; współczynniki $\alpha$, $\beta$; polityka próbkowania $\nu$; polityki oceniane $\mu$, $\phi_s$
+\STATE \textbf{Inicjalizacja:} $J_0, W_0 \in \mathbb{R}^{|S|}$
+\FOR{$n = 0, 1, 2, \dots$}
+\FOR{$s \in S$}
+\STATE Próbkuj $a \sim \nu(\cdot|s)$, zaobserwuj $r(s, a)$, $s' \sim q(\cdot|s, a)$
+\STATE Próbkuj $a' \sim \phi_s(\cdot|s')$, zaobserwuj $r(s', a')$
+\STATE Oblicz cel TD: $r^{\text{target}}_n(s) \leftarrow r(s, a) - (1 - \alpha)\beta \, r(s', a') + \beta W_n(s')$
+\STATE $W_{n+1}(s) \leftarrow W_n(s) + \eta_n \left[ \frac{\phi_s(a|s)}{\nu(a|s)} r^{\text{target}}_n(s) - W_n(s) \right]$
+\STATE $J_{n+1}(s) \leftarrow J_n(s) + \theta_n \left[ \frac{\mu(a|s)}{\nu(a|s)} r^{\text{target}}_n(s) - J_n(s) \right]$
+\ENDFOR
+\ENDFOR
+\STATE \textbf{Zwraca:} $J_n \to J^{\alpha, \beta}_{\mu, \phi_s}$; $W_n \to J^{\alpha, \beta}_{\phi_s}$
+\end{algorithmic}
+\end{algorithm}
+\end{frame}
+
+\begin{frame}{Algorytm 1: Kluczowe mechanizmy}
+\textbf{Cel TD (Temporal Difference):}
+\[
+r^{\text{target}}_n(s) = r(s,a) - (1-\alpha)\beta \, r(s',a') + \beta W_n(s')
+\]
+
+\begin{itemize}
+    \item Człon $-(1-\alpha)\beta r(s',a')$ -- korekta quasi-hiperboliczna
+    \item $\beta W_n(s')$ -- wartość bootstrapowa (quasi-hiperboliczna dla $\phi_s$)
+\end{itemize}
+
+\vspace{0.5em}
+\textbf{Dwie skale czasowe:}
+\begin{itemize}
+    \item \textbf{Szybka skala} ($\eta_n$): aktualizacja $W_n$ (wartość dla $\phi_s$)
+    \item \textbf{Wolna skala} ($\theta_n$): aktualizacja $J_n$ (wartość dla $(\mu, \phi_s)$)
+    \item Warunek: $\frac{\theta_n}{\eta_n} \to 0$ -- separacja skal
+\end{itemize}
+
+\vspace{0.5em}
+\textbf{Korekta off-policy (Importance Sampling):}
+\[
+\rho^W = \frac{\phi_s(a|s)}{\nu(a|s)}, \quad \rho^J = \frac{\mu(a|s)}{\nu(a|s)}
+\]
+\end{frame}
+
+\begin{frame}{Twierdzenie o zbieżności Algorytmu 1}
+\begin{block}{Twierdzenie 2 \cite{eshwar2025}}
+Jeżeli kroki uczenia spełniają warunki Robbinsa-Monro:
+\[
+\sum_n \eta_n = \infty, \quad \sum_n \eta_n^2 < \infty, \quad \sum_n \theta_n = \infty, \quad \sum_n \theta_n^2 < \infty
+\]
+oraz $\frac{\theta_n}{\eta_n} \to 0$ (dwie skale czasowe), to ciągi $(W_n, J_n)$ zbiegają prawie na pewno do $(J^{\alpha, \beta}_{\phi_s}, J^{\alpha, \beta}_{\mu, \phi_s})$.
+\end{block}
+
+\vspace{0.5em}
+\textbf{Praktyczna postać kroków uczenia:}
+\[
+\eta_n = \frac{\eta_0}{(c + n)^{\kappa}}, \quad
+\theta_n = \frac{\theta_0}{(c + n)^{\lambda}}, \quad
+\frac{1}{2} < \kappa < \lambda \le 1
+\]
+
+{\small Dowód: teoria aproksymacji stochastycznej o dwóch skalach czasowych \cite{borkar2008}.}
+\end{frame}
+
+\begin{frame}{Optymalna polityka dla dyskontowania QH}
+\textbf{Definicja:} Para $(\mu^\star, \phi_s^\star)$ jest optymalna, gdy:
+\[
+J^{\alpha, \beta}_{\mu^\star, \phi_s^\star}(s) = \max_{\mu, \phi_s} J^{\alpha, \beta}_{\mu, \phi_s}(s), \quad \forall s \in S
+\]
+
+\vspace{0.5em}
+\textbf{Struktura optymalnej polityki:}
+\begin{itemize}
+    \item $\phi_s^\star = \phi_\beta^\star$ -- optymalna polityka dla dyskontowania wykładniczego
+    \item $\mu^\star(s) = \arg\max_a \left[ r(s, a) + \alpha \beta \sum_{s'} q(s'|s, a) J^{\beta}_{\phi_\beta^\star}(s') \right]$
+\end{itemize}
+
+\vspace{0.5em}
+\begin{block}{Twierdzenie 3 \cite{eshwar2025}}
+Istnieje deterministyczna optymalna para $(\mu^\star, \phi_s^\star)$.
+\end{block}
+
+\vspace{0.3em}
+\textbf{Konsekwencje:}
+\begin{itemize}
+    \item Redukcja przestrzeni poszukiwań do polityk deterministycznych
+    \item Możliwość zastosowania dyskretnych algorytmów optymalizacji
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Algorytm 2: QH Q-Learning}
+\begin{algorithm}[H]
+\caption{Uczenie optymalnej polityki dla QH \cite{eshwar2025}}
+\label{alg:qh-qlearning-defense}
+\begin{algorithmic}[1]
+\small
+\STATE \textbf{Wymagania:} Kroki uczenia $(\eta_n)$, $(\theta_n)$; współczynniki $\alpha$, $\beta$
+\STATE \textbf{Inicjalizacja:} $W_0, Q_0 \in \mathbb{R}^{|S| \times |A|}$
+\FOR{$n = 0, 1, 2, \ldots$}
+\FOR{$(s, a) \in S \times A$}
+\STATE Próbkuj $s' \sim q(\cdot|s, a)$ i zaobserwuj $r(s, a)$
+\STATE $W_{n+1}(s, a) \leftarrow W_n(s, a) + \eta_n \left[ r(s, a) + \beta \max_{a'} W_n(s', a') - W_n(s, a) \right]$
+\STATE $Q_{n+1}(s, a) \leftarrow Q_n(s, a) + \theta_n \left[ (1 - \alpha) r(s, a) + \alpha W_n(s, a) - Q_n(s, a) \right]$
+\ENDFOR
+\ENDFOR
+\STATE \textbf{Zwraca:} $\mu^\star(s) = \arg\max_a Q_n(s, a)$, $\phi_s^\star(s) = \arg\max_a W_n(s, a)$
+\end{algorithmic}
+\end{algorithm}
+
+\vspace{0.3em}
+\textbf{Kluczowe własności:}
+\begin{itemize}
+    \item Algorytm bezmodelowy (model-free) -- nie wymaga znajomości $q$
+    \item $W$ uczy się funkcji Q dla dyskontowania wykładniczego
+    \item $Q$ uczy się funkcji Q dla dyskontowania quasi-hiperbolicznego
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Relacja między funkcjami Q}
+\textbf{Dla pary polityk $(\mu, \phi_s)$:}
+\[
+Q^{\alpha, \beta}_{\mu, \phi_s}(s,a) = (1-\alpha) r(s,a) + \alpha Q^{\beta}_{\phi_s}(s,a)
+\]
+
+\vspace{0.5em}
+\textbf{Dla optymalnych polityk:}
+\begin{align*}
+Q^{\alpha,\beta}_{\mu^\star,\phi_s^\star}(s,a) &= (1-\alpha)\,r(s,a) + \alpha\,Q^{\beta}_{\phi_s^\star}(s,a) \\
+\phi_s^\star &= \arg\max_{\phi_s} Q^{\beta}_{\phi_s}(s,a) = \phi_\beta^\star \\
+\mu^\star(s) &= \arg\max_a Q^{\alpha, \beta}_{\mu^\star, \phi_s^\star}(s,a)
+\end{align*}
+
+\vspace{0.5em}
+\textbf{Aktualizacje w Algorytmie 2:}
+\begin{itemize}
+    \item $W$ -- klasyczny Q-learning (wykładniczy)
+    \item $Q$ -- liniowa kombinacja nagrody bieżącej i $W$ (quasi-hiperboliczny)
+    \item Separacja skal: $W$ zbiega szybciej, $Q$ traktuje $W$ jako quasi-stałe
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Twierdzenie o zbieżności Algorytmu 2}
+\begin{block}{Twierdzenie 4 \cite{eshwar2025}}
+Jeżeli kroki uczenia spełniają warunki Robbinsa-Monro oraz $\frac{\theta_n}{\eta_n} \to 0$, to ciągi $(Q_n, W_n)$ generowane przez Algorytm 2 zbiegają prawie na pewno do $(Q^{\alpha, \beta}_{\mu^\star, \phi_s^\star}, Q^{\beta}_{\phi_s^\star})$.
+
+Para $\mu^\star(s) = \arg\max_a Q_n(s,a)$ oraz $\phi_s^\star(s) = \arg\max_a W_n(s,a)$ jest optymalna.
+\end{block}
+
+\vspace{0.5em}
+\textbf{Kluczowe elementy dowodu:}
+\begin{itemize}
+    \item \textbf{Szybka skala} ($W_n$): klasyczny Q-learning zbiega do $Q^{\beta}_{\phi_s^\star}$
+    \item \textbf{Wolna skala} ($Q_n$): z perspektywy $Q_n$ proces $W_n$ jest quasi-stacjonarny
+    \item \textbf{Zachowanie greedy}: polityki greedy względem zbieżnych funkcji są optymalne
+\end{itemize}
+
+{\small Dowód: metoda ODE dla aproksymacji stochastycznej z dwoma skalami \cite{borkar2008}.}
+\end{frame}
