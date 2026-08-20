@@ -37,13 +37,14 @@ Repozytorium zawiera kompletną implementację i dokumentację pracy inżyniersk
 │   ├── models/                    # Modele środowisk MDP
 │   │   └── mdp_environments.py    # MDP zapasów i GridWorld
 │   ├── experiments/               # Framework eksperymentalny
-│   │   ├── experiment_runner.py   # Główny runner eksperymentów
-│   │   └── comparison_standard_vs_qh.py # Porównanie Standard vs QH
+│   │   ├── InventoryMDP.py        # Reprodukcja eksperymentu inventory
+│   │   ├── two_state_counterexample.py # Kontrprzykład 2-stanowy
+│   │   └── ...                    # Pozostałe warianty eksperymentów
 │   ├── utils/                     # Funkcje pomocnicze
 │   │   └── analysis_tools.py      # Narzędzia analizy i wizualizacji
 │   └── tests/                     # Testy jednostkowe
 ├── notebooks/                     # Notatniki Jupyter
-│   └── standard_vs_qh_comparison.ipynb # Interaktywna analiza porównawcza
+│   └── run_experiments.ipynb      # Interaktywne uruchamianie eksperymentów
 ├── data/                          # Katalog danych
 │   ├── datasets/                  # Zestawy danych wejściowych
 │   ├── results/                   # Wyniki eksperymentów
@@ -69,14 +70,14 @@ Praca bada **dyskontowanie quasi-hiperboliczne (QH)** jako alternatywę dla dysk
 ### Główne wkłady
 
 1. **Ramy teoretyczne**: Rozszerzenie teorii MDP o dyskontowanie quasi-hiperboliczne
-2. **Rozwój algorytmów**: 
+2. **Rozwój algorytmów**:
    - Bezmodelowa ocena polityki z wykorzystaniem aproksymacji stochastycznej dwuskalowej
    - Algorytm QH Q-Learning z gwarancjami zbieżności
-   - **Lokalne liczniki wizyt**: Poprawiona zbieżność dla rzadko odwiedzanych par stan-akcja (nowa implementacja)
+  - **Liczniki wizyt per (stan, akcja)**: Diagnostyka i persystencja wizyt oraz analiza pokrycia przestrzeni stan-akcja
 3. **Zastosowanie praktyczne**: Model gromadzenia zapasów demonstrujący niespójne czasowo optymalne polityki
 4. **Walidacja empiryczna**: Kompleksowa ewaluacja eksperymentalna i porównanie z tradycyjnymi metodami
 
-> **Uwaga:** Implementacja QH Q-Learning używa lokalnych liczników wizyt per para (stan, akcja) zamiast globalnego licznika iteracji. To zapewnia poprawną zbieżność dla rzadko odwiedzanych par (błąd zmniejszony z >10.0 do <2.0). Zobacz `docs/LOCAL_COUNT_STEP_SIZES.md` po szczegóły.
+> **Uwaga:** Aktualna implementacja QH Q-Learning utrzymuje liczniki wizyt per para (stan, akcja), ale harmonogram kroków uczenia jest sterowany globalnym licznikiem iteracji. Szczegóły i kontekst historyczny: `docs/LOCAL_COUNT_STEP_SIZES.md`.
 
 ### Model dyskontowania quasi-hiperbolicznego
 
@@ -104,52 +105,41 @@ python -m pip install numpy scipy matplotlib pandas seaborn
 
 ### Uruchamianie eksperymentów
 
-#### Szybki start: Porównanie Standard vs QH
+#### Szybki start: Aktualne entrypointy eksperymentów
 
 ```bash
-# Uruchom skrypt porównawczy
-cd src/experiments
-python comparison_standard_vs_qh.py
+# Reprodukcja eksperymentu inventory (Fig. 1)
+python -m src.experiments.InventoryMDP
+
+# Kontrprzykład 2-stanowy (Table 1c)
+python -m src.experiments.two_state_counterexample
 ```
 
 Lub użyj interaktywnego notatnika Jupyter:
 ```bash
-jupyter notebook notebooks/standard_vs_qh_comparison.ipynb
+jupyter notebook notebooks/run_experiments.ipynb
 ```
 
 #### Użycie programistyczne
 
 ```python
-from src.experiments.comparison_standard_vs_qh import MDPComparison
 from src.models.mdp_environments import InventoryMDP
+from src.algorithms.qh_qlearning import QHQLearning
 
-# Tworzenie środowiska
-env = InventoryMDP(max_inventory=15, max_order=8)
-
-# Inicjalizacja porównania
-comparison = MDPComparison(
-    env=env,
-    alpha=0.7,   # Parametr uprzedzenia teraźniejszości
-    beta=0.95,   # Współczynnik dyskontowania
-    theta_step=0.1,   # Krok uczenia
-    epsilon=0.1  # Współczynnik eksploracji
+env = InventoryMDP(max_inventory=10, max_order=5)
+agent = QHQLearning(
+  n_states=env.n_states,
+  n_actions=env.n_actions,
+  alpha=0.7,
+  beta=0.95,
 )
 
-# Trenowanie obu algorytmów
-comparison.train(n_episodes=5000, record_interval=100)
-
-# Generowanie raportu
-print(comparison.generate_report())
-
-# Analiza polityk i wartości
-policy_comp = comparison.compare_policies()
-value_comp = comparison.compare_values()
-
-# Sprawdzenie spójności czasowej
-consistency = comparison.analyze_time_consistency(initial_state=5, horizon=10)
-
-# Wizualizacja wyników
-comparison.plot_comparison(save_path='results.png')
+state = env.reset()
+for _ in range(1000):
+  action = int(agent.get_policy()[state])
+  next_state, reward, done, _ = env.step(action)
+  agent.update(state, action, reward, next_state, done=done)
+  state = env.reset() if done else next_state
 ```
 
 ### Budowanie pracy dyplomowej
@@ -221,7 +211,8 @@ Praca demonstruje praktyczne zastosowania w:
 
 ### Porównanie: Standardowe vs Quasi-Hiperboliczne Dyskontowanie
 
-Framework zapewnia kompleksowe porównanie między:
+Ponizszy opis ma charakter koncepcyjny (framework porownawczy nie jest obecnie
+utrzymywany jako osobny modul wykonywalny):
 
 **Standardowy Q-Learning** (Dyskontowanie wykładnicze):
 - Funkcja wartości: $V(s) = E[\sum_{t=0}^{\infty} \beta^t r_t]$
