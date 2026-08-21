@@ -20,12 +20,8 @@ $\alpha < 1$ the agent exhibits present bias.
 
 ## Practical applications
 
-- **Inventory management** — a stock-replenishment MDP showing how present bias
-  systematically changes optimal ordering policies.
-- **Cart-pole balancing** — a discretized, physics-based control task solved
-  with the QH agents.
-
-## Code layout
+- **Inventory management**
+- **Modeling human decision making in compulsive shopping**
 
 - `src/algorithms/` — QH Q-Learning and model-free QH policy evaluation
   (two-timescale stochastic approximation)
